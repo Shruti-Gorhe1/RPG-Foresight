@@ -1,0 +1,24 @@
+version: "3.9"
+
+# Minimal local dependency (Postgres) for running the API/worker on
+# the host. For the full stack (Temporal, Phoenix, containerised API/worker),
+# use app/docker-compose.yml instead.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: rpg_foresight
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

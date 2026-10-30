@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Control Tower</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B121B;
+    --panel:#121C27;
+    --panel-2:#16222E;
+    --border: rgba(255,255,255,.08);
+    --border-2: rgba(255,255,255,.14);
+    --ink:#E9EEF3;
+    --muted:#8C9AAB;
+    --muted-2:#5F6E7F;
+    --accent:#3DDBD9;
+    --accent-dim: rgba(61,219,217,.13);
+    --coral:#E06B85;
+    --stage-ideation:#6E7B8F;
+    --stage-development:#8C7CF0;
+    --stage-testing:#F0A85A;
+    --stage-production:#3DDBD9;
+    --stage-deprecated:#E06B85;
+    --cat-mcp:#8C7CF0;
+    --cat-sys:#3DDBD9;
+    --cat-db:#F0A85A;
+    --cat-kb:#57C785;
+    --cat-agent:#6EA8FE;
+    --radius: 12px;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(61,219,217,.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(140,124,240,.05), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+  }
+  a{color:var(--accent);}
+  ::selection{background:rgba(61,219,217,.25);}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 28px 60px;}
+
+  /* Header / ticker */
+  .topbar{
+    border-bottom:1px solid var(--border);
+    padding:26px 28px 0;
+    background:linear-gradient(180deg, rgba(61,219,217,.04), transparent);
+  }
+  .topbar-inner{max-width:1280px;margin:0 auto;}
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.14em; color:var(--accent);
+    text-transform:uppercase; display:flex; align-items:center; gap:8px; margin-bottom:10px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);}
+  h1.title{font-family:var(--font-display); font-size:34px; font-weight:700; margin:0 0 4px; letter-spacing:-.01em;}
+  .subtitle{color:var(--muted); font-size:14.5px; margin:0 0 22px; max-width:680px; line-height:1.5;}
+
+  .ticker{
+    display:flex; gap:0; flex-wrap:wrap; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  }
+  .ticker-item{
+    flex:1 1 140px; padding:16px 16px; border-right:1px solid var(--border);
+  }
+  .ticker-item:last-child{border-right:none;}
+  .ticker-num{font-family:var(--font-mono); font-size:20px; font-weight:600; color:var(--ink); line-height:1;}
+  .ticker-num.accent{color:var(--accent);}
+  .ticker-num.warn{color:var(--coral);}
+  .ticker-num.blue{color:var(--cat-agent);}
+  .ticker-label{font-size:10.8px; color:var(--muted); margin-top:6px; letter-spacing:.02em;}
+
+  /* Persona tabs */
+  .persona-nav{
+    display:flex; gap:4px; padding:16px 0 0; flex-wrap:wrap;
+  }
+  .persona-btn{
+    font-family:var(--font-body); font-weight:600; font-size:13.5px; color:var(--muted);
+    background:transparent; border:1px solid transparent; padding:10px 16px; border-radius:9px 9px 0 0;
+    cursor:pointer; display:flex; align-items:center; gap:8px; transition:.15s;
+  }
+  .persona-btn .tag{
+    font-family:var(--font-mono); font-size:10px; color:var(--muted-2); border:1px solid var(--border); border-radius:5px; padding:1px 6px;
+  }
+  .persona-btn:hover{color:var(--ink);}
+  .persona-btn.active{
+    color:var(--ink); background:var(--panel); border-color:var(--border); border-bottom-color:var(--panel);
+  }
+  .persona-btn.active .tag{border-color:var(--accent); color:var(--accent);}
+
+  main{padding-top:28px;}
+  .view{display:none;}
+  .view.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+  .view-head{margin-bottom:22px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .view-head h2{font-family:var(--font-display); font-size:21px; margin:0 0 6px;}
+  .view-head p{color:var(--muted); font-size:13.5px; margin:0; max-width:700px; line-height:1.5;}
+
+  /* Cards / panels */
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px;
+  }
+  .grid{display:grid; gap:16px;}
+  .grid-5{grid-template-columns:repeat(5,1fr);}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:1.3fr .9fr;}
+  @media (max-width:980px){
+    .grid-5,.grid-4,.grid-3{grid-template-columns:repeat(2,1fr);}
+    .grid-2{grid-template-columns:1fr;}
+  }
+  @media (max-width:600px){
+    .grid-5,.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}
+    .ticker-item{flex:1 1 45%;}
+  }
+
+  .kpi-label{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;}
+  .kpi-value{font-family:var(--font-mono); font-size:26px; font-weight:600;}
+  .kpi-sub{font-size:12px; color:var(--muted-2); margin-top:6px;}
+
+  .section-title{
+    font-family:var(--font-display); font-size:15px; font-weight:600; margin:0 0 14px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .section-title small{font-family:var(--font-mono); font-size:11px; color:var(--muted-2); font-weight:400;}
+  .section-block{margin-bottom:22px;}
+  .section-block h3{
+    font-family:var(--font-display); font-size:14px; margin:0 0 4px; display:flex; align-items:center; gap:8px;
+  }
+  .section-block h3 .sw{width:9px; height:9px; border-radius:2px; display:inline-block;}
+  .section-block .hint{font-size:12px; color:var(--muted); margin:0 0 12px;}
+
+  /* Pipeline rail — signature element */
+  .rail{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:0; border:1px solid var(--border); border-radius:var(--radius);
+    overflow:hidden; background:var(--panel-2);
+  }
+  .rail-col{padding:14px 12px 16px; border-right:1px solid var(--border); min-height:150px; position:relative;}
+  .rail-col:last-child{border-right:none;}
+  .rail-col-head{
+    font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+    display:flex; align-items:center; gap:6px; margin-bottom:12px; color:var(--muted);
+  }
+  .rail-col-head .sw{width:8px;height:8px;border-radius:2px;}
+  .rail-col-head .n{margin-left:auto; color:var(--ink); font-size:12px;}
+  .rail-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{
+    font-family:var(--font-mono); font-size:10.5px; padding:4px 7px; border-radius:6px; border:1px solid var(--border-2);
+    color:var(--ink); background:rgba(255,255,255,.03); cursor:pointer; white-space:nowrap;
+  }
+  .chip:hover{border-color:var(--accent); color:var(--accent);}
+  @media (max-width:900px){ .rail{grid-template-columns:1fr; } .rail-col{border-right:none; border-bottom:1px solid var(--border);} }
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted-2); padding:8px 10px; border-bottom:1px solid var(--border); font-weight:500;
+  }
+  td{padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .num{font-family:var(--font-mono);}
+  .tbl-wrap{overflow-x:auto;}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:10.5px;
+    padding:3px 8px; border-radius:20px; border:1px solid var(--border-2); white-space:nowrap;
+  }
+  .badge .sw{width:6px;height:6px;border-radius:50%;}
+  .dept-chip{
+    font-size:11px; color:var(--muted); border:1px solid var(--border); border-radius:5px; padding:2px 7px; font-family:var(--font-mono);
+  }
+
+  /* bars */
+  .barrow{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .barrow .lbl{width:150px; font-size:12.5px; color:var(--ink); flex-shrink:0;}
+  .barrow .track{flex:1; height:9px; background:rgba(255,255,255,.05); border-radius:5px; overflow:hidden;}
+  .barrow .fill{height:100%; border-radius:5px;}
+  .barrow .val{width:90px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--muted); flex-shrink:0;}
+  .barrow.tight .lbl{width:170px; font-size:11.5px;}
+  .barrow.tight .val{width:34px;}
+
+  /* risk list */
+  .risk-item{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border);}
+  .risk-item:last-child{border-bottom:none;}
+  .risk-dot{width:8px;height:8px; border-radius:50%; background:var(--coral); margin-top:6px; flex-shrink:0; box-shadow:0 0 8px rgba(224,107,133,.6);}
+  .risk-item h4{margin:0 0 3px; font-size:13.5px;}
+  .risk-item p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.5;}
+
+  /* filters */
+  .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;}
+  select, input[type=text]{
+    background:var(--panel-2); border:1px solid var(--border-2); color:var(--ink); border-radius:8px;
+    padding:9px 12px; font-family:var(--font-body); font-size:13px; outline:none;
+  }
+  select:focus, input[type=text]:focus{border-color:var(--accent);}
+  input[type=text]{min-width:220px;}
+  .chipbar{display:flex; gap:8px; flex-wrap:wrap;}
+  .fchip{
+    font-size:12px; padding:6px 12px; border-radius:20px; border:1px solid var(--border-2); color:var(--muted); cursor:pointer;
+    background:transparent; font-family:var(--font-body); display:inline-flex; align-items:center; gap:6px;
+  }
+  .fchip .sw{width:7px;height:7px;border-radius:50%;}
+  .fchip.active{background:var(--accent-dim); color:var(--accent); border-color:var(--accent);}
+
+  /* buttons */
+  .btn{font-family:var(--font-body); font-size:12.5px; font-weight:600; padding:9px 15px; border-radius:8px; border:1px solid var(--border-2); background:transparent; color:var(--ink); cursor:pointer; white-space:nowrap;}
+  .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .btn.primary{background:var(--accent); color:#06201F; border-color:var(--accent);}
+  .btn.primary:hover{opacity:.88; color:#06201F;}
+  .btn.ghost{color:var(--muted);}
+  .btn.small{padding:6px 12px; font-size:11.5px;}
+
+  /* dependency mini badges on registry cards */
+  .depbadges{display:flex; gap:6px; flex-wrap:wrap;}
+  .dbadge{
+    font-family:var(--font-mono); font-size:10px; color:var(--muted); border:1px solid var(--border-2); border-radius:5px;
+    padding:2px 6px; display:inline-flex; align-items:center; gap:4px;
+  }
+  .dbadge .sw{width:6px;height:6px;border-radius:50%;}
+
+  /* small integration cards */
+  .mini-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;}
+  @media (max-width:900px){.mini-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:560px){.mini-grid{grid-template-columns:1fr;}}
+  .mini-card{
+    background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:13px 14px;
+  }
+  .mini-card .mname{font-size:12.5px; color:var(--ink); margin-bottom:6px; font-weight:500;}
+  .mini-card .mcount{font-family:var(--font-mono); font-size:19px; font-weight:600;}
+  .mini-card .mnote{font-size:10.5px; color:var(--muted-2); margin-top:4px;}
+
+  /* registry cards */
+  .reg-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  @media (max-width:980px){.reg-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:640px){.reg-grid{grid-template-columns:1fr;}}
+  .reg-card{
+    background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer;
+    transition:.15s; display:flex; flex-direction:column; gap:10px;
+  }
+  .reg-card:hover{border-color:var(--accent); transform:translateY(-2px);}
+  .reg-card-top{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .reg-card h3{margin:0; font-size:14.5px; font-family:var(--font-display);}
+  .reg-card p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.5; flex:1;}
+  .reg-meta{display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--muted-2);}
+  .tagrow{display:flex; gap:6px; flex-wrap:wrap;}
+  .tag{font-family:var(--font-mono); font-size:10px; color:var(--muted); background:rgba(255,255,255,.04); padding:2px 7px; border-radius:5px;}
+
+  /* dependency graph */
+  .graph-wrap{display:flex; justify-content:center; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:6px;}
+  .graph-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11.5px; color:var(--muted);}
+  .graph-legend span{display:inline-flex; align-items:center; gap:6px;}
+  .graph-legend .sw{width:8px;height:8px;border-radius:2px;}
+
+  /* discovery cards */
+  .disc-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  @media (max-width:800px){.disc-grid{grid-template-columns:1fr;}}
+  .disc-card{background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px;}
+  .disc-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .conf-badge{font-family:var(--font-mono); font-size:10.5px; padding:3px 9px; border-radius:20px; border:1px solid var(--border-2); white-space:nowrap;}
+  .disc-source{font-size:11px; color:var(--muted-2); font-family:var(--font-mono);}
+  .disc-actions{display:flex; gap:8px; margin-top:4px;}
+
+  /* governance badges */
+  .gov-badge-row{display:flex; gap:6px; flex-wrap:wrap;}
+  .gbadge{font-family:var(--font-mono); font-size:10px; padding:3px 8px; border-radius:20px; border:1px solid var(--border-2); white-space:nowrap;}
+
+  /* forms */
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0;}
+  @media (max-width:560px){.form-grid{grid-template-columns:1fr;}}
+  .form-field{display:flex; flex-direction:column; gap:6px;}
+  .form-field label{font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted-2); font-family:var(--font-mono);}
+  .form-field input, .form-field select, .form-field textarea{
+    background:var(--panel-2); border:1px solid var(--border-2); color:var(--ink); border-radius:8px; padding:9px 11px; font-family:var(--font-body); font-size:13px; outline:none; width:100%;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus{border-color:var(--accent);}
+  .form-field textarea{resize:vertical; min-height:60px; font-family:var(--font-body);}
+  .form-grid .full{grid-column:1 / -1;}
+  .form-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:6px;}
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(4,8,12,.72); backdrop-filter:blur(3px); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:24px;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--panel); border:1px solid var(--border-2); border-radius:14px; max-width:700px; width:100%;
+    max-height:88vh; overflow-y:auto; padding:26px; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:18px; right:18px; background:transparent; border:1px solid var(--border-2); color:var(--muted);
+    width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px;
+  }
+  .modal-close:hover{color:var(--ink); border-color:var(--accent);}
+  .modal h2{font-family:var(--font-display); font-size:20px; margin:0 0 4px; padding-right:36px;}
+  .modal .modal-sub{color:var(--muted); font-size:12.5px; margin-bottom:16px; font-family:var(--font-mono);}
+  .def-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0;}
+  @media (max-width:520px){.def-grid{grid-template-columns:1fr;}}
+  .def-grid .full{grid-column:1 / -1;}
+  .def-block{background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:12px 14px;}
+  .def-block h5{margin:0 0 8px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted-2); font-family:var(--font-mono);}
+  .def-block ul{margin:0; padding-left:16px; font-size:12.5px; color:var(--ink); line-height:1.6;}
+  .def-block .plain{font-size:12.5px; color:var(--ink); line-height:1.6; font-family:var(--font-mono);}
+  .modal .desc{font-size:13.5px; line-height:1.6; color:var(--ink); margin-bottom:6px;}
+  .modal .outcome{font-size:13px; line-height:1.6; color:var(--muted); margin-bottom:0; padding:10px 12px; border-left:2px solid var(--accent); background:rgba(61,219,217,.05);}
+  .modal .graph-title{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted-2); font-family:var(--font-mono); margin:20px 0 10px;}
+
+  .toast{position:fixed; bottom:24px; right:24px; background:var(--panel); border:1px solid var(--accent); border-radius:10px; padding:12px 18px; font-size:13px; color:var(--ink); box-shadow:0 8px 24px rgba(0,0,0,.45); z-index:70; display:none; max-width:320px;}
+  .toast.show{display:block; animation:fade .2s ease;}
+
+  .footer-note{margin-top:36px; padding-top:18px; border-top:1px solid var(--border); font-size:11.5px; color:var(--muted-2); font-family:var(--font-mono);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="eyebrow"><span class="dot"></span>ENTERPRISE AI OPERATIONS</div>
+    <h1 class="title">AI Control Tower</h1>
+    <p class="subtitle">Live status of every AI application running across the enterprise — autonomous agents, copilots, predictive models, generative features, and chatbots — with pipeline stage, value delivered, dependencies, governance sign-off, and a feed of AI use cases discovered running in the wild but not yet registered.</p>
+    <div class="ticker" id="ticker"></div>
+    <div class="persona-nav" id="personaNav">
+      <button class="persona-btn active" data-view="exec">Executive <span class="tag">C-SUITE</span></button>
+      <button class="persona-btn" data-view="business">Business Impact <span class="tag">BU OWNERS</span></button>
+      <button class="persona-btn" data-view="platform">Platform &amp; Dependencies <span class="tag">IT / ARCH</span></button>
+      <button class="persona-btn" data-view="governance">Governance &amp; Discovery <span class="tag">ARB / SEC / DPO</span></button>
+      <button class="persona-btn" data-view="registry">AI Registry <span class="tag">BUILDERS</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<main>
+
+  <!-- EXECUTIVE VIEW -->
+  <section class="view active" id="view-exec">
+    <div class="view-head">
+      <div><h2>Executive Overview</h2><p>Where the AI portfolio stands today — agents, copilots, models, and generative features alike: what's live, what it's worth, and what needs attention.</p></div>
+    </div>
+
+    <div class="grid grid-5" id="execKpis" style="margin-bottom:20px;"></div>
+
+    <div class="panel" style="margin-bottom:20px;">
+      <div class="section-title">Portfolio pipeline <small>click a chip to open its definition</small></div>
+      <div class="rail" id="rail"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px;">
+      <div class="section-title">Portfolio mix by AI type <small>agents, copilots, predictive models, generative features, chatbots, vision models</small></div>
+      <div id="typeBars"></div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:20px; align-items:start;">
+      <div class="panel">
+        <div class="section-title">Value delivered by business unit <small>$ / month, realized + projected</small></div>
+        <div id="deptBars"></div>
+      </div>
+      <div class="panel">
+        <div class="section-title">Needs attention <small id="riskCount"></small></div>
+        <div id="riskList"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Top agents by value <small>across all stages</small></div>
+      <div class="tbl-wrap">
+        <table id="topTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUSINESS VIEW -->
+  <section class="view" id="view-business">
+    <div class="view-head">
+      <div><h2>Business Impact</h2><p>What each business unit is running, and the outcomes it's producing. Filter to your team.</p></div>
+    </div>
+    <div class="filters">
+      <div class="chipbar" id="deptChips"></div>
+    </div>
+    <div class="grid grid-3" id="bizKpis" style="margin-bottom:20px;"></div>
+    <div class="panel">
+      <div class="section-title">Agents in <span id="bizDeptLabel">every business unit</span></div>
+      <div class="tbl-wrap">
+        <table id="bizTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORM VIEW -->
+  <section class="view" id="view-platform">
+    <div class="view-head">
+      <div><h2>Platform &amp; Dependencies</h2><p>Every surface the AI fleet touches — MCP tool servers, enterprise systems, databases, knowledge bases — plus how agents and models call each other, and where dependency is concentrated.</p></div>
+    </div>
+
+    <div class="section-block">
+      <h3><span class="sw" style="background:var(--cat-sys)"></span>Enterprise systems</h3>
+      <p class="hint">Direct integrations into core business systems.</p>
+      <div class="mini-grid" id="sysCards"></div>
+    </div>
+
+    <div class="section-block">
+      <h3><span class="sw" style="background:var(--cat-db)"></span>Databases &amp; data platforms</h3>
+      <p class="hint">Where agents read or write structured / analytical data.</p>
+      <div class="mini-grid" id="dbCards"></div>
+    </div>
+
+    <div class="section-block">
+      <h3><span class="sw" style="background:var(--cat-mcp)"></span>MCP servers</h3>
+      <p class="hint">Tool servers agents call over the Model Context Protocol.</p>
+      <div class="mini-grid" id="mcpCards"></div>
+    </div>
+
+    <div class="section-block">
+      <h3><span class="sw" style="background:var(--cat-kb)"></span>Knowledge bases</h3>
+      <p class="hint">Reference content and policy sources agents ground their answers in.</p>
+      <div class="mini-grid" id="kbCards"></div>
+    </div>
+
+    <div class="panel section-block">
+      <div class="section-title">Concentration risk <small>systems / data platforms 4+ agents depend on</small></div>
+      <div id="concRisk"></div>
+    </div>
+
+    <div class="panel section-block">
+      <div class="section-title"><span><span class="sw" style="background:var(--cat-agent); width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:6px;"></span>Cross-AI call network</span><small id="edgeCount"></small></div>
+      <p class="hint" style="margin-top:-6px;">AI initiatives don't only call systems — several call each other directly to hand off work.</p>
+      <div class="graph-wrap" id="networkGraph"></div>
+      <div class="tbl-wrap" style="margin-top:16px;">
+        <table id="edgeTable"></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Initiative → integration dependency matrix <small>enterprise systems + databases</small></div>
+      <div class="tbl-wrap">
+        <table id="matrixTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- GOVERNANCE VIEW -->
+  <section class="view" id="view-governance">
+    <div class="view-head">
+      <div><h2>Governance &amp; Discovery</h2><p>Every AI initiative's path through Architecture Review, Security Review, and Data Protection Review — agents, copilots, models, and generative features alike — plus a feed of AI applications auto-detected running in the enterprise that haven't been registered yet.</p></div>
+    </div>
+
+    <div class="grid grid-4" id="govKpis" style="margin-bottom:20px;"></div>
+
+    <div class="grid grid-3" id="gateBreakdown" style="margin-bottom:20px; align-items:start;"></div>
+
+    <div class="panel section-block">
+      <div class="section-title">Review status by agent</div>
+      <div class="tbl-wrap">
+        <table id="govTable"></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">
+        <span>Auto AI discovery <small id="discCount"></small></span>
+        <button class="btn small" id="btnAddAgentGov">+ Register manually</button>
+      </div>
+      <p class="hint" style="margin-top:-6px; margin-bottom:16px;">Detected from system, MCP, and API-gateway activity that matches known AI usage signatures — agents, bots, models, or embedded GenAI features — but isn't in the registry yet.</p>
+      <div class="disc-grid" id="discGrid"></div>
+    </div>
+  </section>
+
+  <!-- REGISTRY VIEW -->
+  <section class="view" id="view-registry">
+    <div class="view-head">
+      <div><h2>AI Registry</h2><p>The shared catalog of every AI application and use case — agents, copilots, predictive models, generative features, chatbots, and vision models — with description, inputs/outputs, API, SLA, dependency graph, and governance status, so any team can discover and consume what already exists.</p></div>
+      <button class="btn primary" id="btnAddAgentRegistry">+ Register new AI application</button>
+    </div>
+    <div class="filters">
+      <input type="text" id="regSearch" placeholder="Search by name, tag, or description…">
+      <select id="regType">
+        <option value="">All AI types</option>
+      </select>
+      <select id="regStage">
+        <option value="">All stages</option>
+      </select>
+      <select id="regDept"></select>
+    </div>
+    <div class="filters">
+      <div class="chipbar" id="regCatChips"></div>
+    </div>
+    <div class="reg-grid" id="regGrid"></div>
+  </section>
+
+  <div class="footer-note">AI-CTRL-TOWER · covers agents, copilots, predictive models, generative features, chatbots &amp; vision models · sample data for illustration · last synced 2026-08-13 · registry additions and governance decisions are saved and visible to everyone viewing this dashboard</div>
+</main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STAGES = ['Ideation','Development','Testing','Production','Deprecated'];
+const STAGE_COLOR = {
+  Ideation:'var(--stage-ideation)', Development:'var(--stage-development)',
+  Testing:'var(--stage-testing)', Production:'var(--stage-production)', Deprecated:'var(--stage-deprecated)'
+};
+const CAT_COLORS = { mcp:'#8C7CF0', sys:'#3DDBD9', db:'#F0A85A', kb:'#57C785', agents:'#6EA8FE' };
+const CAT_LABELS = { mcp:'MCP', sys:'Systems', db:'Databases', kb:'Knowledge', agents:'Agent calls' };
+const REVIEW_STATUSES = ['Not Submitted','In Review','Changes Requested','Approved with Conditions','Approved'];
+const REVIEW_COLOR = {
+  'Not Submitted':'#5F6E7F', 'In Review':'#8C7CF0', 'Changes Requested':'#E06B85',
+  'Approved with Conditions':'#F0A85A', 'Approved':'#3DDBD9'
+};
+const GATES = [['arb','Architecture Review Board'],['security','Security Review'],['dp','Data Protection Review']];
+const TYPES = ['Autonomous Agent','Copilot / Assistant','Predictive / ML Model','Generative AI Feature','Conversational AI / Chatbot','Computer Vision Model'];
+const TYPE_COLORS = {
+  'Autonomous Agent':'#3DDBD9',
+  'Copilot / Assistant':'#8C7CF0',
+  'Predictive / ML Model':'#F0A85A',
+  'Generative AI Feature':'#F2A6D8',
+  'Conversational AI / Chatbot':'#6EA8FE',
+  'Computer Vision Model':'#57C785'
+};
+
+const BASE_AGENTS = [
+{id:'inv-recon', name:'Invoice Reconciliation Agent', dept:'Finance', owner:'Finance Ops Engineering', contact:'#finance-ai-agents',
+ stage:'Production', version:'v3.1', lastUpdated:'2026-06-02', timeInStageWeeks:34, atRisk:false, type:'Autonomous Agent',
+ description:'Matches incoming vendor invoices against POs and goods-receipt records, flags mismatches, and auto-posts clean matches to the ledger.',
+ businessOutcome:'Cut invoice processing cost and eliminated duplicate payments across accounts payable.',
+ valueAmount:186000, valueType:'Cost avoidance', hoursSavedMonthly:640,
+ enterpriseSystems:['SAP S/4HANA'], databases:['Snowflake'], knowledgeBases:['AP Policy KB'],
+ mcpServers:['SAP MCP Server','PDF Extraction MCP'], calls:['expense-audit'],
+ consumers:['AP Leadership Dashboard','SAP Payment Run'],
+ inputs:['Vendor invoice (PDF/EDI)','Purchase order record','Goods receipt record'],
+ outputs:['Match disposition','Exception queue item','Ledger posting'],
+ apiEndpoint:'/agents/v1/invoice-reconciliation', sla:'99.5% uptime · P95 < 6s per invoice', tags:['finance','ap','automation'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'contract-review', name:'Vendor Contract Reviewer', dept:'Legal', owner:'Enterprise Legal Ops', contact:'#legal-ai-agents',
+ stage:'Testing', version:'v0.8', lastUpdated:'2026-07-20', timeInStageWeeks:6, atRisk:false, type:'Autonomous Agent',
+ description:'Reviews vendor contracts against the standard playbook, redlines risky clauses, and routes exceptions to counsel.',
+ businessOutcome:'Projected to cut contract review turnaround from 8 days to under 2.',
+ valueAmount:42000, valueType:'Projected run-rate', hoursSavedMonthly:0,
+ enterpriseSystems:['DocuSign','Microsoft 365'], databases:[], knowledgeBases:['Legal Playbook KB'],
+ mcpServers:['DocuSign MCP Server','PDF Extraction MCP'], calls:[],
+ consumers:['Legal Contract Queue'],
+ inputs:['Contract PDF','Playbook ruleset'], outputs:['Redline suggestions','Risk score','Escalation flag'],
+ apiEndpoint:'/agents/v1/contract-reviewer', sla:'Target 99% uptime · P95 < 15s per contract', tags:['legal','contracts','risk'],
+ reviews:{arb:'Approved', security:'In Review', dp:'Not Submitted'}},
+
+{id:'candidate-screen', name:'Candidate Screening Assistant', dept:'HR', owner:'Talent Acquisition Engineering', contact:'#hr-ai-agents',
+ stage:'Production', version:'v2.4', lastUpdated:'2026-05-11', timeInStageWeeks:40, atRisk:false, type:'Autonomous Agent',
+ description:'Screens inbound applications against role requirements and produces a ranked shortlist with rationale.',
+ businessOutcome:'Reduced recruiter screening time and shortened time-to-shortlist by 55%.',
+ valueAmount:58000, valueType:'Cost avoidance', hoursSavedMonthly:310,
+ enterpriseSystems:['Workday','Microsoft 365'], databases:[], knowledgeBases:['Recruiting Criteria KB'],
+ mcpServers:['Workday MCP Server','Email MCP'], calls:[],
+ consumers:['Recruiter Shortlist View','Workday Requisition'],
+ inputs:['Candidate resume','Job requisition'], outputs:['Ranked shortlist','Screening rationale'],
+ apiEndpoint:'/agents/v1/candidate-screening', sla:'99% uptime · P95 < 5s per candidate', tags:['hr','recruiting'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'onboarding', name:'Employee Onboarding Concierge', dept:'HR', owner:'People Experience Engineering', contact:'#hr-ai-agents',
+ stage:'Production', version:'v1.6', lastUpdated:'2026-04-28', timeInStageWeeks:52, atRisk:false, type:'Autonomous Agent',
+ description:'Guides new hires through day-one tasks, answers policy questions, and routes IT/access requests automatically.',
+ businessOutcome:'Freed HR business partners from routine onboarding questions.',
+ valueAmount:21000, valueType:'Cost avoidance', hoursSavedMonthly:180,
+ enterpriseSystems:['Workday','ServiceNow'], databases:[], knowledgeBases:['HR Policy KB'],
+ mcpServers:['Slack MCP Server','ServiceNow MCP Server'], calls:['access-review'],
+ consumers:['New Hire Slack Channel','ServiceNow Access Request'],
+ inputs:['New hire record','Policy knowledge base'], outputs:['Answer / response','Provisioning ticket'],
+ apiEndpoint:'/agents/v1/onboarding-concierge', sla:'99% uptime · P95 < 3s per query', tags:['hr','onboarding'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'lead-scoring', name:'Lead Scoring Agent', dept:'Sales', owner:'RevOps Engineering', contact:'#sales-ai-agents',
+ stage:'Production', version:'v4.0', lastUpdated:'2026-07-02', timeInStageWeeks:61, atRisk:false, type:'Predictive / ML Model',
+ description:'Scores and prioritizes inbound leads using firmographic, intent, and engagement signals.',
+ businessOutcome:'Influenced pipeline by directing SDR effort toward the highest-propensity leads.',
+ valueAmount:210000, valueType:'Revenue influenced', hoursSavedMonthly:90,
+ enterpriseSystems:['Salesforce'], databases:['Snowflake'], knowledgeBases:[],
+ mcpServers:['Salesforce MCP Server'], calls:['proposal-drafter'],
+ consumers:['SDR Queue','Sales Leadership Dashboard'],
+ inputs:['Lead record','Firmographic data','Engagement events'], outputs:['Lead score','Priority tier'],
+ apiEndpoint:'/agents/v1/lead-scoring', sla:'99.9% uptime · P95 < 2s per lead', tags:['sales','revops'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved with Conditions'}},
+
+{id:'proposal-drafter', name:'Sales Proposal Drafter', dept:'Sales', owner:'Sales Enablement Engineering', contact:'#sales-ai-agents',
+ stage:'Development', version:'v0.3', lastUpdated:'2026-08-01', timeInStageWeeks:5, atRisk:false, type:'Copilot / Assistant',
+ description:'Drafts first-pass customer proposals from CRM opportunity data and pricing rules.',
+ businessOutcome:'Projected to cut proposal drafting time from 3 hours to 20 minutes.',
+ valueAmount:35000, valueType:'Projected cost avoidance', hoursSavedMonthly:0,
+ enterpriseSystems:['Salesforce','Microsoft 365'], databases:[], knowledgeBases:['Pricing & Discount KB'],
+ mcpServers:['Salesforce MCP Server','Email MCP'], calls:[],
+ consumers:['Deal Desk'],
+ inputs:['Opportunity record','Pricing table'], outputs:['Draft proposal document'],
+ apiEndpoint:'/agents/v1/proposal-drafter (pre-release)', sla:'Not yet defined', tags:['sales','proposals'],
+ reviews:{arb:'In Review', security:'Not Submitted', dp:'Not Submitted'}},
+
+{id:'support-triage', name:'Customer Support Triage Agent', dept:'Customer Support', owner:'CX Automation', contact:'#cx-ai-agents',
+ stage:'Production', version:'v3.5', lastUpdated:'2026-06-15', timeInStageWeeks:58, atRisk:false, type:'Autonomous Agent',
+ description:'Classifies and routes inbound tickets, and drafts first-response replies for common issues.',
+ businessOutcome:'Cut average first-response time from 4 hours to 12 minutes.',
+ valueAmount:124000, valueType:'Cost avoidance', hoursSavedMonthly:980,
+ enterpriseSystems:['Zendesk'], databases:[], knowledgeBases:['Support Macros KB'],
+ mcpServers:['Slack MCP Server','Zendesk MCP Server'], calls:['refund-adjudication'],
+ consumers:['Support Queue','CX Leadership Dashboard'],
+ inputs:['Support ticket','Customer history'], outputs:['Ticket category','Draft response','Routing decision'],
+ apiEndpoint:'/agents/v1/support-triage', sla:'99.9% uptime · P95 < 2s per ticket', tags:['support','cx'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'refund-adjudication', name:'Refund Adjudication Agent', dept:'Customer Support', owner:'CX Platform', contact:'#cx-ai-agents',
+ stage:'Testing', version:'v0.9', lastUpdated:'2026-07-28', timeInStageWeeks:4, atRisk:true, type:'Autonomous Agent',
+ riskNote:'Depends on both Zendesk and SAP S/4HANA and carries direct financial exposure — needs a second sign-off gate before production.',
+ description:'Evaluates refund requests against policy and order history, and auto-approves within a defined threshold.',
+ businessOutcome:'Projected to resolve 70% of refund requests without human review.',
+ valueAmount:30000, valueType:'Projected cost avoidance', hoursSavedMonthly:0,
+ enterpriseSystems:['Zendesk','SAP S/4HANA'], databases:[], knowledgeBases:['Support Macros KB'],
+ mcpServers:['Zendesk MCP Server','SAP MCP Server'], calls:[],
+ consumers:['Refund Queue'],
+ inputs:['Refund request','Order record','Policy ruleset'], outputs:['Approval decision','Refund transaction'],
+ apiEndpoint:'/agents/v1/refund-adjudication', sla:'Target 99.5% uptime · P95 < 4s', tags:['support','finance','risk'],
+ reviews:{arb:'Approved', security:'Changes Requested', dp:'In Review'}},
+
+{id:'demand-forecast', name:'Demand Forecasting Agent', dept:'Supply Chain', owner:'Supply Chain Analytics', contact:'#supplychain-ai-agents',
+ stage:'Production', version:'v5.2', lastUpdated:'2026-05-30', timeInStageWeeks:70, atRisk:false, type:'Predictive / ML Model',
+ description:'Forecasts SKU-level demand from sales history, seasonality, and macro signals to drive replenishment.',
+ businessOutcome:'Reduced stockouts and excess inventory carrying cost.',
+ valueAmount:310000, valueType:'Cost avoidance', hoursSavedMonthly:400,
+ enterpriseSystems:['SAP S/4HANA'], databases:['Snowflake','Databricks'], knowledgeBases:['Inventory Planning KB'],
+ mcpServers:['Snowflake MCP Server'], calls:[],
+ consumers:['Replenishment Planning','Supply Chain Dashboard'],
+ inputs:['Sales history','Seasonality index','Macro signals'], outputs:['SKU demand forecast','Replenishment recommendation'],
+ apiEndpoint:'/agents/v1/demand-forecasting', sla:'99.5% uptime · nightly batch < 45 min', tags:['supply-chain','forecasting'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'supplier-risk', name:'Supplier Risk Monitor', dept:'Supply Chain', owner:'Supply Chain Analytics (proposed)', contact:'#supplychain-ai-agents',
+ stage:'Ideation', version:'n/a', lastUpdated:'2026-07-05', timeInStageWeeks:20, atRisk:true, type:'Predictive / ML Model',
+ riskNote:'Stalled in ideation for 20 weeks with no assigned engineering owner — business case needs to be re-sponsored or archived.',
+ description:'Would continuously score supplier financial and geopolitical risk and alert on threshold breaches.',
+ businessOutcome:'Targeted at reducing supply disruption exposure; business case still in review.',
+ valueAmount:0, valueType:'Not yet quantified', hoursSavedMonthly:0,
+ enterpriseSystems:['SAP S/4HANA'], databases:[], knowledgeBases:['Supplier Risk KB (proposed)'],
+ mcpServers:[], calls:[],
+ consumers:[],
+ inputs:['Supplier master data','External risk feed (proposed)'], outputs:['Risk score (proposed)'],
+ apiEndpoint:'Not yet built', sla:'n/a', tags:['supply-chain','risk'],
+ reviews:{arb:'Not Submitted', security:'Not Submitted', dp:'Not Submitted'}},
+
+{id:'incident-copilot', name:'Incident Response Copilot', dept:'IT Operations', owner:'Site Reliability Engineering', contact:'#sre-ai-agents',
+ stage:'Production', version:'v2.9', lastUpdated:'2026-06-22', timeInStageWeeks:46, atRisk:false, type:'Copilot / Assistant',
+ description:'Correlates alerts, suggests root cause, and drafts incident timelines during production incidents.',
+ businessOutcome:'Cut mean time to resolution by 38% across P1/P2 incidents.',
+ valueAmount:95000, valueType:'Cost avoidance', hoursSavedMonthly:520,
+ enterpriseSystems:['ServiceNow'], databases:['Databricks'], knowledgeBases:['Runbook KB'],
+ mcpServers:['Slack MCP Server','GitHub MCP Server'], calls:['access-review'],
+ consumers:['Incident Bridge','SRE Postmortem Log'],
+ inputs:['Alert stream','Service topology'], outputs:['Root cause suggestion','Draft incident timeline'],
+ apiEndpoint:'/agents/v1/incident-copilot', sla:'99.95% uptime · P95 < 3s', tags:['it-ops','sre'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'change-validator', name:'Change Request Validator', dept:'IT Operations', owner:'IT Service Management', contact:'#itsm-ai-agents',
+ stage:'Deprecated', version:'v1.2 (final)', lastUpdated:'2026-03-01', timeInStageWeeks:12, atRisk:true, type:'Autonomous Agent',
+ riskNote:'Superseded by the Incident Response Copilot. Still holds a live ServiceNow integration pending decommission on 2026-09-30.',
+ description:'Validated change requests against a static risk checklist before approval.',
+ businessOutcome:'Superseded by the Incident Response Copilot, which now covers this scope; scheduled for shutdown.',
+ valueAmount:0, valueType:'Retired', hoursSavedMonthly:0,
+ enterpriseSystems:['ServiceNow'], databases:[], knowledgeBases:[],
+ mcpServers:['ServiceNow MCP Server'], calls:[],
+ consumers:[],
+ inputs:['Change request record'], outputs:['Risk checklist result (retired)'],
+ apiEndpoint:'/agents/v1/change-validator (sunset 2026-09-30)', sla:'n/a', tags:['it-ops','retired'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'access-review', name:'Access Review Agent', dept:'IT Operations', owner:'Identity & Access Engineering', contact:'#iam-ai-agents',
+ stage:'Testing', version:'v0.7', lastUpdated:'2026-07-30', timeInStageWeeks:3, atRisk:false, type:'Autonomous Agent',
+ description:'Reviews entitlement grants against role baselines and flags excess access for manager sign-off.',
+ businessOutcome:'Projected to cut quarterly access-review effort by 60%.',
+ valueAmount:48000, valueType:'Projected cost avoidance', hoursSavedMonthly:0,
+ enterpriseSystems:['ServiceNow','Workday','Microsoft 365'], databases:[], knowledgeBases:['Access Policy KB'],
+ mcpServers:['ServiceNow MCP Server','Workday MCP Server'], calls:[],
+ consumers:['Access Review Queue'],
+ inputs:['Entitlement record','Role baseline'], outputs:['Excess-access flag','Sign-off request'],
+ apiEndpoint:'/agents/v1/access-review', sla:'Target 99% uptime · P95 < 5s', tags:['it-ops','security','iam'],
+ reviews:{arb:'Approved', security:'In Review', dp:'In Review'}},
+
+{id:'campaign-copy', name:'Campaign Copy Generator', dept:'Marketing', owner:'Marketing Automation', contact:'#marketing-ai-agents',
+ stage:'Production', version:'v2.1', lastUpdated:'2026-05-18', timeInStageWeeks:44, atRisk:false, type:'Generative AI Feature',
+ description:'Generates on-brand copy variants for campaigns from a creative brief and brand voice guide.',
+ businessOutcome:'Cut campaign copy turnaround from days to hours.',
+ valueAmount:27000, valueType:'Cost avoidance', hoursSavedMonthly:260,
+ enterpriseSystems:['Microsoft 365'], databases:[], knowledgeBases:['Brand Voice KB'],
+ mcpServers:['Slack MCP Server'], calls:[],
+ consumers:['Campaign Ops Queue'],
+ inputs:['Creative brief','Brand voice guide'], outputs:['Copy variants'],
+ apiEndpoint:'/agents/v1/campaign-copy', sla:'99% uptime · P95 < 4s', tags:['marketing','content'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'market-digest', name:'Market Intelligence Digest', dept:'Marketing', owner:'Marketing Insights', contact:'#marketing-ai-agents',
+ stage:'Development', version:'v0.4', lastUpdated:'2026-07-25', timeInStageWeeks:7, atRisk:false, type:'Generative AI Feature',
+ description:'Summarizes competitor moves and market signals into a weekly digest for brand and product teams.',
+ businessOutcome:'Projected to replace 15 hours a week of manual research aggregation.',
+ valueAmount:18000, valueType:'Projected cost avoidance', hoursSavedMonthly:0,
+ enterpriseSystems:[], databases:['Snowflake'], knowledgeBases:['Competitive Intel KB'],
+ mcpServers:['Web Search MCP','Slack MCP Server'], calls:['campaign-copy'],
+ consumers:['Brand Team Slack Channel'],
+ inputs:['Market data feed','News / signal feed'], outputs:['Weekly digest summary'],
+ apiEndpoint:'/agents/v1/market-digest (pre-release)', sla:'Not yet defined', tags:['marketing','research'],
+ reviews:{arb:'In Review', security:'Not Submitted', dp:'Not Submitted'}},
+
+{id:'expense-audit', name:'Expense Report Auditor', dept:'Finance', owner:'Finance Ops Engineering', contact:'#finance-ai-agents',
+ stage:'Production', version:'v2.7', lastUpdated:'2026-06-10', timeInStageWeeks:50, atRisk:false, type:'Autonomous Agent',
+ description:'Audits expense reports against policy, flags violations, and auto-approves compliant reports.',
+ businessOutcome:'Cut policy-violation leakage and manual audit workload.',
+ valueAmount:64000, valueType:'Cost avoidance', hoursSavedMonthly:410,
+ enterpriseSystems:['SAP S/4HANA','Microsoft 365'], databases:[], knowledgeBases:['Expense Policy KB'],
+ mcpServers:['SAP MCP Server','Email MCP'], calls:[],
+ consumers:['Finance Audit Queue'],
+ inputs:['Expense report','Policy ruleset'], outputs:['Approval decision','Violation flag'],
+ apiEndpoint:'/agents/v1/expense-auditor', sla:'99.5% uptime · P95 < 3s', tags:['finance','compliance'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'churn-predictor', name:'Customer Churn Prediction Model', dept:'Customer Support', owner:'Data Science', contact:'#datascience-ai',
+ stage:'Production', version:'v6.0', lastUpdated:'2026-05-25', timeInStageWeeks:66, atRisk:false, type:'Predictive / ML Model',
+ description:'Scores active accounts weekly on churn probability using usage, support, and billing signals to trigger retention outreach.',
+ businessOutcome:'Retention team now prioritizes outreach on the highest-risk accounts first, lifting save rate.',
+ valueAmount:145000, valueType:'Revenue retained', hoursSavedMonthly:0,
+ enterpriseSystems:['Salesforce'], databases:['Snowflake'], knowledgeBases:[],
+ mcpServers:[], calls:[],
+ consumers:['Customer Success Dashboard','Retention Campaign Queue'],
+ inputs:['Usage telemetry','Support ticket history','Billing history'], outputs:['Churn probability score','Risk tier'],
+ apiEndpoint:'/models/v1/churn-prediction', sla:'Weekly batch scoring · 99% job success rate', tags:['cx','ml','retention'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved with Conditions'}},
+
+{id:'fraud-detection', name:'Transaction Fraud Detection Model', dept:'Finance', owner:'Risk & Fraud Analytics', contact:'#risk-ai',
+ stage:'Production', version:'v8.3', lastUpdated:'2026-06-28', timeInStageWeeks:88, atRisk:false, type:'Predictive / ML Model',
+ description:'Scores transactions in real time for fraud risk and holds high-risk transactions for manual review.',
+ businessOutcome:'Reduced confirmed fraud losses while keeping the false-decline rate within target.',
+ valueAmount:220000, valueType:'Cost avoidance', hoursSavedMonthly:0,
+ enterpriseSystems:['Payment Gateway'], databases:['Snowflake','Databricks'], knowledgeBases:['Fraud Pattern KB'],
+ mcpServers:[], calls:[],
+ consumers:['Fraud Ops Queue','Finance Risk Dashboard'],
+ inputs:['Transaction event','Device fingerprint','Account history'], outputs:['Fraud risk score','Hold decision'],
+ apiEndpoint:'/models/v1/fraud-detection', sla:'99.99% uptime · P95 < 200ms per transaction', tags:['finance','risk','ml'],
+ reviews:{arb:'Approved', security:'Approved with Conditions', dp:'Approved'}},
+
+{id:'hr-chatbot', name:'HR Policy Chatbot', dept:'HR', owner:'People Experience Engineering', contact:'#hr-ai-agents',
+ stage:'Production', version:'v2.0', lastUpdated:'2026-05-02', timeInStageWeeks:48, atRisk:false, type:'Conversational AI / Chatbot',
+ description:'Answers employee questions about benefits, leave, and policy in natural language across Slack and Teams.',
+ businessOutcome:'Deflected routine HR inquiries away from HR business partners.',
+ valueAmount:33000, valueType:'Cost avoidance', hoursSavedMonthly:210,
+ enterpriseSystems:['Workday','Microsoft 365'], databases:[], knowledgeBases:['HR Policy KB'],
+ mcpServers:['Slack MCP Server'], calls:[],
+ consumers:['Employee Self-Service Portal'],
+ inputs:['Employee question','Policy knowledge base'], outputs:['Conversational answer','Escalation to HR partner'],
+ apiEndpoint:'/chat/v1/hr-policy-bot', sla:'99% uptime · P95 < 2s response', tags:['hr','chatbot','genai'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'defect-vision', name:'Visual Defect Inspection Model', dept:'Supply Chain', owner:'Manufacturing Analytics', contact:'#supplychain-ai-agents',
+ stage:'Testing', version:'v0.6', lastUpdated:'2026-07-15', timeInStageWeeks:8, atRisk:false, type:'Computer Vision Model',
+ description:'Classifies product images from the line camera to flag visual defects before packaging.',
+ businessOutcome:'Projected to cut the defect escape rate to customers by catching issues on the line.',
+ valueAmount:0, valueType:'Projected cost avoidance', hoursSavedMonthly:0,
+ enterpriseSystems:['MES System'], databases:['Databricks'], knowledgeBases:[],
+ mcpServers:[], calls:[],
+ consumers:['Line Quality Dashboard'],
+ inputs:['Line camera image stream'], outputs:['Defect classification','Line-stop signal'],
+ apiEndpoint:'/models/v1/defect-vision', sla:'Target P95 < 300ms per frame', tags:['supply-chain','vision','ml'],
+ reviews:{arb:'Approved', security:'In Review', dp:'Not Submitted'}},
+
+{id:'code-review-copilot', name:'Code Review Copilot', dept:'Engineering', owner:'Developer Platform Engineering', contact:'#eng-ai-agents',
+ stage:'Production', version:'v3.2', lastUpdated:'2026-06-18', timeInStageWeeks:40, atRisk:false, type:'Copilot / Assistant',
+ description:'Suggests review comments on pull requests for style, common bugs, and test coverage gaps before a human reviewer looks.',
+ businessOutcome:'Cut average time-to-first-review-comment and caught style issues before human review.',
+ valueAmount:52000, valueType:'Cost avoidance', hoursSavedMonthly:300,
+ enterpriseSystems:['GitHub'], databases:[], knowledgeBases:['Engineering Style Guide KB'],
+ mcpServers:['GitHub MCP Server'], calls:[],
+ consumers:['Pull Request Review Thread'],
+ inputs:['Pull request diff','Style guide'], outputs:['Suggested review comments'],
+ apiEndpoint:'/copilots/v1/code-review', sla:'99.5% uptime · P95 < 8s per PR', tags:['engineering','copilot','genai'],
+ reviews:{arb:'Approved', security:'Approved', dp:'Approved'}},
+
+{id:'pricing-optimizer', name:'Dynamic Pricing Optimizer', dept:'Sales', owner:'RevOps Engineering', contact:'#sales-ai-agents',
+ stage:'Development', version:'v0.2', lastUpdated:'2026-08-05', timeInStageWeeks:4, atRisk:false, type:'Predictive / ML Model',
+ description:'Recommends discount bands per deal based on win-rate history, competitive context, and margin targets.',
+ businessOutcome:'Projected to improve win rate on discretionary discounting without eroding margin.',
+ valueAmount:60000, valueType:'Projected revenue influenced', hoursSavedMonthly:0,
+ enterpriseSystems:['Salesforce'], databases:['Snowflake'], knowledgeBases:[],
+ mcpServers:[], calls:[],
+ consumers:['Deal Desk'],
+ inputs:['Deal record','Historical win/loss data','Margin targets'], outputs:['Recommended discount band'],
+ apiEndpoint:'/models/v1/pricing-optimizer (pre-release)', sla:'Not yet defined', tags:['sales','pricing','ml'],
+ reviews:{arb:'In Review', security:'Not Submitted', dp:'Not Submitted'}}
+];
+
+// edge reasons for the multi-agent call network
+const EDGE_REASONS = {
+  'inv-recon>expense-audit':'Cross-checks for duplicate reimbursement before posting to the ledger.',
+  'onboarding>access-review':'Requests entitlement provisioning for a new hire.',
+  'lead-scoring>proposal-drafter':'Triggers a proposal draft for high-propensity leads.',
+  'support-triage>refund-adjudication':'Escalates refund-eligible tickets for adjudication.',
+  'incident-copilot>access-review':'Requests an emergency access lockdown / review.',
+  'market-digest>campaign-copy':'Feeds competitive talking points into campaign copy.'
+};
+
+// auto-discovered, unregistered agents
+const DISCOVERIES = [
+  {id:'disc-1', suspectedName:'bulk-updater.py (scheduled job)', suspectedDept:'Data & Analytics', suspectedType:'Autonomous Agent',
+   source:'Snowflake query log', confidence:82, firstSeen:'2026-08-01',
+   signal:'Recurring service-account queries tagged agent=true, running structured LLM prompts against customer tables on a nightly schedule.'},
+  {id:'disc-2', suspectedName:'Legal Slack bot (unregistered)', suspectedDept:'Legal', suspectedType:'Generative AI Feature',
+   source:'Slack app directory', confidence:91, firstSeen:'2026-07-29',
+   signal:'OAuth app with chat:write and files:read scopes posting auto-generated clause summaries into #legal-ops.'},
+  {id:'disc-3', suspectedName:'svc_ai_ticket_bot', suspectedDept:'IT Operations', suspectedType:'Autonomous Agent',
+   source:'ServiceNow integration-user activity', confidence:76, firstSeen:'2026-08-05',
+   signal:'Service account creating and closing tickets at a rate inconsistent with human activity, with LLM-generated resolution notes.'},
+  {id:'disc-4', suspectedName:'auto-pr-reviewer (GitHub App)', suspectedDept:'Engineering', suspectedType:'Copilot / Assistant',
+   source:'GitHub App installation logs', confidence:88, firstSeen:'2026-08-10',
+   signal:'Installed app posts AI-generated review comments on pull requests using an external LLM API key.'},
+  {id:'disc-5', suspectedName:'deal-qualifier flow', suspectedDept:'Sales', suspectedType:'Predictive / ML Model',
+   source:'Salesforce API call pattern', confidence:69, firstSeen:'2026-08-11',
+   signal:'API user generating opportunity-qualification notes at a frequency matching known agent request signatures.'}
+];
+
+// ---------- mutable state ----------
+let AGENTS = [];
+let depts = [];
+let CALLED_BY = {};
+let sysCounts = {}, dbCounts = {}, mcpCounts = {}, kbCounts = {}, totalEdges = 0;
+let customAgents = [];
+let dismissedIds = [];
+let registeredIds = [];
+let REVIEW_OVERRIDES = {};
+let currentFormDiscoveryId = null;
+
+// ---------- helpers ----------
+const fmtMoney = n => n>=1000000 ? '$'+(n/1000000).toFixed(2)+'M' : n>=1000 ? '$'+Math.round(n/1000)+'K' : '$'+n;
+const stageBadge = stage => `<span class="badge"><span class="sw" style="background:${STAGE_COLOR[stage]}"></span>${stage}</span>`;
+const typeBadge = type => `<span class="badge"><span class="sw" style="background:${TYPE_COLORS[type]||'#8C9AAB'}"></span>${type||'Uncategorized'}</span>`;
+const byDept = agents => { const m={}; agents.forEach(a=>{(m[a.dept]=m[a.dept]||[]).push(a);}); return m; };
+const nameOf = id => (AGENTS.find(x=>x.id===id)||{}).name || id;
+const shortName = name => name.split(' ').slice(0,2).join(' ');
+const countBy = getter => { const m={}; AGENTS.forEach(a=>getter(a).forEach(x=>{m[x]=(m[x]||0)+1;})); return m; };
+const splitList = v => v.split(',').map(s=>s.trim()).filter(Boolean);
+
+function hasStorage(){ return typeof window.storage !== 'undefined' && window.storage; }
+async function persist(key, value){
+  if(!hasStorage()) return;
+  try{ await window.storage.set(key, JSON.stringify(value), true); }catch(e){ console.error('storage set failed', key, e); }
+}
+async function loadPersistedState(){
+  customAgents = []; dismissedIds = []; registeredIds = []; REVIEW_OVERRIDES = {};
+  if(!hasStorage()) return;
+  try{ const r = await window.storage.get('agents:custom', true); if(r&&r.value) customAgents = JSON.parse(r.value); }catch(e){}
+  try{ const r = await window.storage.get('discovery:dismissed', true); if(r&&r.value) dismissedIds = JSON.parse(r.value); }catch(e){}
+  try{ const r = await window.storage.get('discovery:registered', true); if(r&&r.value) registeredIds = JSON.parse(r.value); }catch(e){}
+  try{ const r = await window.storage.get('reviews:overrides', true); if(r&&r.value) REVIEW_OVERRIDES = JSON.parse(r.value); }catch(e){}
+}
+function recompute(){
+  AGENTS = [...BASE_AGENTS, ...customAgents];
+  depts = [...new Set(AGENTS.map(a=>a.dept))].sort();
+  CALLED_BY = {}; AGENTS.forEach(a=> (a.calls||[]).forEach(t=> (CALLED_BY[t]=CALLED_BY[t]||[]).push(a.id)) );
+  sysCounts = countBy(a=>a.enterpriseSystems||[]);
+  dbCounts  = countBy(a=>a.databases||[]);
+  mcpCounts = countBy(a=>a.mcpServers||[]);
+  kbCounts  = countBy(a=>a.knowledgeBases||[]);
+  totalEdges = AGENTS.reduce((s,a)=>s+(a.calls||[]).length,0);
+}
+function effectiveReview(agentId, gate){
+  const ov = REVIEW_OVERRIDES[agentId];
+  if(ov && ov[gate]) return ov[gate];
+  const a = AGENTS.find(x=>x.id===agentId);
+  return (a && a.reviews && a.reviews[gate]) || 'Not Submitted';
+}
+function reviewNotes(agentId){ return (REVIEW_OVERRIDES[agentId]&&REVIEW_OVERRIDES[agentId].notes) || ''; }
+function gateBadge(status){ return `<span class="gbadge" style="border-color:${REVIEW_COLOR[status]}88; color:${REVIEW_COLOR[status]}">${status}</span>`; }
+function confColor(c){ return c>=85?'#3DDBD9': c>=70?'#F0A85A':'#E06B85'; }
+function pendingDiscoveries(){ return DISCOVERIES.filter(d=>!dismissedIds.includes(d.id) && !registeredIds.includes(d.id)); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+// ---------- ticker ----------
+function renderTicker(){
+  const inProd = AGENTS.filter(a=>a.stage==='Production').length;
+  const inPipeline = AGENTS.filter(a=>['Ideation','Development','Testing'].includes(a.stage)).length;
+  const monthlyValue = AGENTS.filter(a=>a.stage==='Production').reduce((s,a)=>s+a.valueAmount,0);
+  const atRisk = AGENTS.filter(a=>a.atRisk).length;
+  const discCount = pendingDiscoveries().length;
+  const items = [
+    [String(AGENTS.length), 'AI initiatives tracked', ''],
+    [String(inProd), 'Live in production', 'accent'],
+    [String(inPipeline), 'In build / test', ''],
+    [fmtMoney(monthlyValue)+'/mo', 'Realized value', 'accent'],
+    [String(Object.keys(mcpCounts).length), 'MCP servers in use', 'blue'],
+    [String(totalEdges), 'Cross-AI calls', 'blue'],
+    [String(discCount), 'Unregistered, discovered', discCount>0?'warn':''],
+    [String(atRisk), 'Need attention', 'warn'],
+  ];
+  document.getElementById('ticker').innerHTML = items.map(([v,l,c])=>
+    `<div class="ticker-item"><div class="ticker-num ${c}">${v}</div><div class="ticker-label">${l}</div></div>`).join('');
+}
+
+// ---------- executive ----------
+function renderExecKpis(){
+  const inProd = AGENTS.filter(a=>a.stage==='Production');
+  const monthlyValue = inProd.reduce((s,a)=>s+a.valueAmount,0);
+  const hours = AGENTS.reduce((s,a)=>s+a.hoursSavedMonthly,0);
+  const fte = Math.round(hours/173);
+  const atRisk = AGENTS.filter(a=>a.atRisk).length;
+  const cards = [
+    ['Live in production', inProd.length, `of ${AGENTS.length} AI initiatives tracked`],
+    ['Realized value / month', fmtMoney(monthlyValue), 'from production initiatives only'],
+    ['Hours reclaimed / month', hours.toLocaleString(), `≈ ${fte} FTE of capacity`],
+    ['Business units adopting', depts.length, 'active across the enterprise'],
+    ['At-risk initiatives', atRisk, 'flagged — see “Needs attention”'],
+  ];
+  document.getElementById('execKpis').innerHTML = cards.map(([l,v,s])=>
+    `<div class="panel"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${s}</div></div>`).join('');
+}
+
+function renderRail(){
+  document.getElementById('rail').innerHTML = STAGES.map(stage=>{
+    const list = AGENTS.filter(a=>a.stage===stage);
+    return `<div class="rail-col">
+      <div class="rail-col-head"><span class="sw" style="background:${STAGE_COLOR[stage]}"></span>${stage}<span class="n">${list.length}</span></div>
+      <div class="rail-chips">${list.map(a=>`<span class="chip" data-open="${a.id}" title="${a.name} — ${a.dept} — ${a.type||'Uncategorized'}">${shortName(a.name)}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#rail .chip').forEach(c=>c.addEventListener('click',()=>{
+    switchView('registry'); openModal(c.dataset.open);
+  }));
+}
+
+function renderDeptBars(){
+  const grouped = byDept(AGENTS);
+  const totals = Object.entries(grouped).map(([d,list])=>[d, list.reduce((s,a)=>s+a.valueAmount,0)]).sort((a,b)=>b[1]-a[1]);
+  const max = Math.max(...totals.map(t=>t[1]), 1);
+  document.getElementById('deptBars').innerHTML = totals.map(([d,v])=>
+    `<div class="barrow"><div class="lbl">${d}</div><div class="track"><div class="fill" style="width:${(v/max*100)}%; background:linear-gradient(90deg, var(--accent), var(--cat-mcp));"></div></div><div class="val">${fmtMoney(v)}/mo</div></div>`
+  ).join('');
+}
+
+function renderRiskList(){
+  const risky = AGENTS.filter(a=>a.atRisk);
+  document.getElementById('riskCount').textContent = risky.length+' flagged';
+  document.getElementById('riskList').innerHTML = risky.map(a=>
+    `<div class="risk-item"><div class="risk-dot"></div><div><h4>${a.name} <span class="dept-chip">${a.dept}</span></h4><p>${a.riskNote}</p></div></div>`
+  ).join('') || '<p style="color:var(--muted); font-size:13px;">Nothing flagged right now.</p>';
+}
+
+function renderTypeBars(){
+  const counts = {};
+  AGENTS.forEach(a=>{ const t=a.type||'Uncategorized'; counts[t]=(counts[t]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max = Math.max(...sorted.map(s=>s[1]), 1);
+  document.getElementById('typeBars').innerHTML = sorted.map(([t,c])=>
+    `<div class="barrow"><div class="lbl">${t}</div><div class="track"><div class="fill" style="width:${c/max*100}%; background:${TYPE_COLORS[t]||'#8C9AAB'};"></div></div><div class="val">${c} ${c===1?'item':'items'}</div></div>`
+  ).join('');
+}
+
+function renderTopTable(){
+  const top = [...AGENTS].sort((a,b)=>b.valueAmount-a.valueAmount).slice(0,5);
+  document.getElementById('topTable').innerHTML = `
+    <thead><tr><th>Initiative</th><th>AI Type</th><th>Department</th><th>Stage</th><th>Value / mo</th><th>Basis</th></tr></thead>
+    <tbody>${top.map(a=>`<tr><td>${a.name}</td><td>${typeBadge(a.type)}</td><td><span class="dept-chip">${a.dept}</span></td><td>${stageBadge(a.stage)}</td><td class="num">${fmtMoney(a.valueAmount)}</td><td style="color:var(--muted); font-size:12px;">${a.valueType}</td></tr>`).join('')}</tbody>`;
+}
+
+// ---------- business view ----------
+let bizDeptFilter = '';
+function renderDeptChips(){
+  const chips = ['All', ...depts];
+  document.getElementById('deptChips').innerHTML = chips.map(d=>
+    `<button class="fchip ${d==='All'&&bizDeptFilter===''?'active':bizDeptFilter===d?'active':''}" data-dept="${d==='All'?'':d}">${d}</button>`
+  ).join('');
+  document.querySelectorAll('#deptChips .fchip').forEach(btn=>btn.addEventListener('click',()=>{
+    bizDeptFilter = btn.dataset.dept; renderDeptChips(); renderBusiness();
+  }));
+}
+function renderBusiness(){
+  const list = bizDeptFilter ? AGENTS.filter(a=>a.dept===bizDeptFilter) : AGENTS;
+  document.getElementById('bizDeptLabel').textContent = bizDeptFilter || 'every business unit';
+  const value = list.reduce((s,a)=>s+a.valueAmount,0);
+  const hours = list.reduce((s,a)=>s+a.hoursSavedMonthly,0);
+  const inProd = list.filter(a=>a.stage==='Production').length;
+  document.getElementById('bizKpis').innerHTML = [
+    ['Agents running', list.length, `${inProd} live in production`],
+    ['Value / month', fmtMoney(value), 'realized + projected'],
+    ['Hours saved / month', hours.toLocaleString(), 'across production agents'],
+  ].map(([l,v,s])=>`<div class="panel"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${s}</div></div>`).join('');
+
+  document.getElementById('bizTable').innerHTML = `
+    <thead><tr><th>Initiative</th><th>AI Type</th><th>Owner</th><th>Stage</th><th>Business outcome</th><th>Value / mo</th></tr></thead>
+    <tbody>${list.map(a=>`<tr><td>${a.name}</td><td>${typeBadge(a.type)}</td><td style="color:var(--muted); font-size:12px;">${a.owner}</td><td>${stageBadge(a.stage)}</td><td style="max-width:280px; font-size:12.5px; color:var(--muted);">${a.businessOutcome}</td><td class="num">${a.valueAmount?fmtMoney(a.valueAmount):'—'}</td></tr>`).join('')}</tbody>`;
+}
+
+// ---------- platform view ----------
+function renderMiniCards(containerId, counts, note){
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  document.getElementById(containerId).innerHTML = sorted.map(([name,c])=>
+    `<div class="mini-card"><div class="mname">${name}</div><div class="mcount">${c}</div><div class="mnote">${c===1?'1 agent':c+' agents'} · ${note}</div></div>`
+  ).join('') || `<p style="color:var(--muted); font-size:12.5px;">None in use yet.</p>`;
+}
+function renderConcentration(){
+  const combined = {};
+  Object.entries(sysCounts).forEach(([k,v])=>combined[k]=(combined[k]||0)+v);
+  Object.entries(dbCounts).forEach(([k,v])=>combined[k]=(combined[k]||0)+v);
+  const risky = Object.entries(combined).filter(([,c])=>c>=4).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('concRisk').innerHTML = risky.map(([sys,c])=>{
+    const agentsOn = AGENTS.filter(a=>(a.enterpriseSystems||[]).includes(sys)||(a.databases||[]).includes(sys)).map(a=>a.name);
+    return `<div class="risk-item"><div class="risk-dot" style="background:var(--stage-testing); box-shadow:0 0 8px rgba(240,168,90,.5);"></div>
+      <div><h4>${sys} <span class="dept-chip">${c} agents depend on this</span></h4>
+      <p>An outage or breaking change here affects: ${agentsOn.join(', ')}.</p></div></div>`;
+  }).join('') || '<p style="color:var(--muted); font-size:13px;">No system currently carries concentrated dependency.</p>';
+}
+function shortenSeg(x1,y1,x2,y2,g1,g2){
+  const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1, ux=dx/len, uy=dy/len;
+  return [x1+ux*g1, y1+uy*g1, x2-ux*g2, y2-uy*g2];
+}
+function textAnchorFor(x,cx){ return x < cx-6 ? 'end' : x > cx+6 ? 'start' : 'middle'; }
+function renderNetworkGraph(){
+  const involved = [...new Set(AGENTS.flatMap(a=>(a.calls&&a.calls.length)?[a.id,...a.calls]:[]))];
+  const n = involved.length;
+  if(n===0){
+    document.getElementById('networkGraph').innerHTML = '<p style="color:var(--muted); font-size:13px; padding:20px;">No agent-to-agent calls yet.</p>';
+    document.getElementById('edgeCount').textContent = '0 active calls';
+    document.getElementById('edgeTable').innerHTML = '';
+    return;
+  }
+  const cx=290, cy=200, R=155;
+  const pos = {};
+  involved.forEach((id,i)=>{
+    const angle = -90 + i*(360/n);
+    const rad = angle*Math.PI/180;
+    pos[id] = [cx+R*Math.cos(rad), cy+R*Math.sin(rad)];
+  });
+  let defs = `<defs><marker id="net-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${CAT_COLORS.agents}"/></marker></defs>`;
+  let edges = '';
+  AGENTS.forEach(a=>(a.calls||[]).forEach(t=>{
+    if(!pos[a.id] || !pos[t]) return;
+    const [x1,y1]=pos[a.id], [x2,y2]=pos[t];
+    const [sx1,sy1,sx2,sy2] = shortenSeg(x1,y1,x2,y2,16,16);
+    edges += `<line x1="${sx1}" y1="${sy1}" x2="${sx2}" y2="${sy2}" stroke="${CAT_COLORS.agents}" stroke-width="1.6" opacity="0.6" marker-end="url(#net-arrow)"/>`;
+  }));
+  let nodes = involved.map(id=>{
+    const [x,y]=pos[id];
+    const anchor = textAnchorFor(x,cx);
+    const dx = anchor==='end'?-11:anchor==='start'?11:0;
+    const dy = y < cy-6 ? -10 : y > cy+6 ? 16 : 4;
+    return `<circle cx="${x}" cy="${y}" r="6" fill="var(--panel)" stroke="${CAT_COLORS.agents}" stroke-width="2"/>
+            <text x="${x+dx}" y="${y+dy}" fill="var(--ink)" font-family="var(--font-mono)" font-size="10.5" text-anchor="${anchor}">${shortName(nameOf(id))}</text>`;
+  }).join('');
+  document.getElementById('networkGraph').innerHTML = `<svg viewBox="0 0 580 400" width="100%" style="max-height:380px;">${defs}${edges}${nodes}</svg>`;
+  document.getElementById('edgeCount').textContent = totalEdges+' active call'+(totalEdges===1?'':'s');
+  document.getElementById('edgeTable').innerHTML = `
+    <thead><tr><th>Caller</th><th></th><th>Callee</th><th>Why</th></tr></thead>
+    <tbody>${AGENTS.flatMap(a=>(a.calls||[]).map(t=>
+      `<tr><td>${a.name}</td><td style="color:var(--cat-agent);">→</td><td>${nameOf(t)}</td><td style="color:var(--muted); font-size:12.5px;">${EDGE_REASONS[a.id+'>'+t]||'Hands off work to this agent.'}</td></tr>`
+    )).join('')}</tbody>`;
+}
+function renderMatrix(){
+  const systems = [...new Set(AGENTS.flatMap(a=>a.enterpriseSystems||[]))].sort();
+  const dbs = [...new Set(AGENTS.flatMap(a=>a.databases||[]))].sort();
+  const cols = [...systems.map(s=>({name:s,type:'sys'})), ...dbs.map(d=>({name:d,type:'db'}))];
+  let head = `<thead><tr><th>Initiative</th><th>Stage</th>${cols.map(c=>`<th style="color:${CAT_COLORS[c.type]}">${c.name}</th>`).join('')}</tr></thead>`;
+  let body = `<tbody>${AGENTS.map(a=>`<tr><td>${a.name}</td><td>${stageBadge(a.stage)}</td>${cols.map(c=>{
+    const has = c.type==='sys' ? (a.enterpriseSystems||[]).includes(c.name) : (a.databases||[]).includes(c.name);
+    return `<td style="text-align:center;">${has?`<span style="color:${CAT_COLORS[c.type]}; font-size:14px;">●</span>`:'<span style="color:var(--muted-2);">–</span>'}</td>`;
+  }).join('')}</tr>`).join('')}</tbody>`;
+  document.getElementById('matrixTable').innerHTML = head+body;
+}
+function renderPlatform(){
+  renderMiniCards('sysCards', sysCounts, 'connected');
+  renderMiniCards('dbCards', dbCounts, 'connected');
+  renderMiniCards('mcpCards', mcpCounts, 'calling this MCP server');
+  renderMiniCards('kbCards', kbCounts, 'grounded in this source');
+  renderConcentration();
+  renderNetworkGraph();
+  renderMatrix();
+}
+
+// ---------- governance & discovery ----------
+function renderGovernance(){
+  const allGates = a => GATES.map(([key])=>effectiveReview(a.id,key));
+  const cleared = AGENTS.filter(a=>allGates(a).every(s=>s==='Approved'||s==='Approved with Conditions')).length;
+  const blocked = AGENTS.filter(a=>allGates(a).some(s=>s==='Changes Requested')).length;
+  const inReview = AGENTS.filter(a=>allGates(a).some(s=>s==='In Review')).length;
+  const pending = pendingDiscoveries();
+
+  document.getElementById('govKpis').innerHTML = [
+    ['Cleared for production', cleared, 'passed all three review gates'],
+    ['Blocked', blocked, 'changes requested on at least one gate'],
+    ['In active review', inReview, 'awaiting a reviewer decision'],
+    ['Unregistered AI apps found', pending.length, 'flagged by auto-discovery'],
+  ].map(([l,v,s])=>`<div class="panel"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${s}</div></div>`).join('');
+
+  document.getElementById('gateBreakdown').innerHTML = GATES.map(([key,label])=>{
+    const counts = {};
+    AGENTS.forEach(a=>{ const s=effectiveReview(a.id,key); counts[s]=(counts[s]||0)+1; });
+    const rows = REVIEW_STATUSES.filter(s=>counts[s]).map(s=>
+      `<div class="barrow tight"><div class="lbl" style="color:${REVIEW_COLOR[s]}">${s}</div><div class="track"><div class="fill" style="width:${counts[s]/AGENTS.length*100}%; background:${REVIEW_COLOR[s]};"></div></div><div class="val">${counts[s]}</div></div>`
+    ).join('');
+    return `<div class="panel"><div class="section-title" style="margin-bottom:10px;">${label}</div>${rows}</div>`;
+  }).join('');
+
+  document.getElementById('govTable').innerHTML = `
+    <thead><tr><th>Initiative</th><th>AI Type</th><th>Stage</th><th>ARB</th><th>Security</th><th>Data Protection</th><th></th></tr></thead>
+    <tbody>${AGENTS.map(a=>`<tr><td>${a.name}</td><td>${typeBadge(a.type)}</td><td>${stageBadge(a.stage)}</td><td>${gateBadge(effectiveReview(a.id,'arb'))}</td><td>${gateBadge(effectiveReview(a.id,'security'))}</td><td>${gateBadge(effectiveReview(a.id,'dp'))}</td><td><button class="btn small" data-review="${a.id}">Update</button></td></tr>`).join('')}</tbody>`;
+  document.querySelectorAll('#govTable [data-review]').forEach(b=>b.addEventListener('click',()=>openReviewModal(b.dataset.review)));
+
+  document.getElementById('discCount').textContent = pending.length+' pending';
+  document.getElementById('discGrid').innerHTML = pending.map(d=>`
+    <div class="disc-card">
+      <div class="disc-top">
+        <div><strong style="font-size:13.5px;">${d.suspectedName}</strong><div class="dept-chip" style="margin-top:6px; display:inline-block;">${d.suspectedDept}</div></div>
+        <span class="conf-badge" style="border-color:${confColor(d.confidence)}88; color:${confColor(d.confidence)}">${d.confidence}% confidence</span>
+      </div>
+      <div class="disc-source">Detected via ${d.source} · first seen ${d.firstSeen}</div>
+      <p style="font-size:12.5px; color:var(--muted); line-height:1.5; margin:0;">${d.signal}</p>
+      <div class="disc-actions">
+        <button class="btn primary small" data-register="${d.id}">Register agent</button>
+        <button class="btn ghost small" data-dismiss="${d.id}">Dismiss</button>
+      </div>
+    </div>`).join('') || `<p style="color:var(--muted); font-size:13px;">No new agents detected — the fleet matches the registry.</p>`;
+  document.querySelectorAll('#discGrid [data-register]').forEach(b=>b.addEventListener('click',()=>{
+    const d = DISCOVERIES.find(x=>x.id===b.dataset.register);
+    openAddAgentForm({name:d.suspectedName, dept:d.suspectedDept, type:d.suspectedType, description:d.signal, tags:'discovered'}, d.id);
+  }));
+  document.querySelectorAll('#discGrid [data-dismiss]').forEach(b=>b.addEventListener('click',()=>{
+    dismissedIds.push(b.dataset.dismiss); persist('discovery:dismissed', dismissedIds);
+    showToast('Marked as a false positive.');
+    renderGovernance(); renderTicker();
+  }));
+}
+
+function openReviewModal(agentId){
+  const a = AGENTS.find(x=>x.id===agentId); if(!a) return;
+  const cur = { arb:effectiveReview(agentId,'arb'), security:effectiveReview(agentId,'security'), dp:effectiveReview(agentId,'dp'), notes:reviewNotes(agentId) };
+  const opts = REVIEW_STATUSES.map(s=>`<option value="${s}">${s}</option>`).join('');
+  document.getElementById('modalBody').innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <h2>${a.name}</h2>
+    <div class="modal-sub">Update governance status · visible to everyone viewing this registry</div>
+    <div class="form-grid">
+      <div class="form-field"><label>Architecture Review Board</label><select id="rv-arb">${opts}</select></div>
+      <div class="form-field"><label>Security Review</label><select id="rv-security">${opts}</select></div>
+      <div class="form-field"><label>Data Protection Review</label><select id="rv-dp">${opts}</select></div>
+      <div class="form-field full"><label>Reviewer notes</label><textarea id="rv-notes">${cur.notes}</textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn ghost" id="rvCancel">Cancel</button>
+      <button class="btn primary" id="rvSave">Save status</button>
+    </div>
+  `;
+  document.getElementById('rv-arb').value = cur.arb;
+  document.getElementById('rv-security').value = cur.security;
+  document.getElementById('rv-dp').value = cur.dp;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('rvCancel').addEventListener('click', closeModal);
+  document.getElementById('rvSave').addEventListener('click', ()=>{
+    REVIEW_OVERRIDES[agentId] = {
+      arb: document.getElementById('rv-arb').value,
+      security: document.getElementById('rv-security').value,
+      dp: document.getElementById('rv-dp').value,
+      notes: document.getElementById('rv-notes').value
+    };
+    persist('reviews:overrides', REVIEW_OVERRIDES);
+    closeModal(); showToast('Governance status updated.');
+    renderGovernance();
+  });
+}
+
+// ---------- per-agent dependency graph (registry) ----------
+function polar(cx,cy,r,deg){ const rad=deg*Math.PI/180; return [cx+r*Math.cos(rad), cy+r*Math.sin(rad)]; }
+function buildAgentGraph(agent){
+  const cx=280, cy=225, R=126, LR=172;
+  const cats = [
+    {key:'mcp', label:'MCP SERVERS', angle:270, items:(agent.mcpServers||[]).map(l=>({label:l}))},
+    {key:'sys', label:'ENTERPRISE SYSTEMS', angle:342, items:(agent.enterpriseSystems||[]).map(l=>({label:l}))},
+    {key:'db', label:'DATABASES', angle:54, items:(agent.databases||[]).map(l=>({label:l}))},
+    {key:'kb', label:'KNOWLEDGE BASES', angle:126, items:(agent.knowledgeBases||[]).map(l=>({label:l}))},
+    {key:'agents', label:'MULTI-AGENT CALLS', angle:198, items:[
+        ...(agent.calls||[]).map(id=>({label:shortName(nameOf(id)), dir:'out'})),
+        ...((CALLED_BY[agent.id])||[]).map(id=>({label:shortName(nameOf(id)), dir:'in'}))
+      ]}
+  ];
+  const markerId = 'arrow-'+agent.id;
+  let defs = `<defs><marker id="${markerId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${CAT_COLORS.agents}"/></marker></defs>`;
+  let body = '';
+  cats.forEach(cat=>{
+    const color = CAT_COLORS[cat.key];
+    const n = cat.items.length;
+    const [lx,ly] = polar(cx,cy,LR,cat.angle);
+    const labelAnchor = textAnchorFor(lx,cx);
+    body += `<text x="${lx}" y="${ly}" fill="${color}" font-family="var(--font-mono)" font-size="9.5" text-anchor="${labelAnchor}" font-weight="600">${cat.label}${n?` (${n})`:''}</text>`;
+    if(n===0){
+      body += `<text x="${lx}" y="${ly+14}" fill="#5F6E7F" font-family="var(--font-mono)" font-size="9" text-anchor="${labelAnchor}">none</text>`;
+      return;
+    }
+    const spread = n>1 ? 24 : 0;
+    cat.items.forEach((item,i)=>{
+      const a = cat.angle + (n>1 ? (-spread + (2*spread*i/(n-1))) : 0);
+      const [x,y] = polar(cx,cy,R,a);
+      const isAgentCat = cat.key==='agents';
+      let x1=cx,y1=cy,x2=x,y2=y;
+      if(isAgentCat && item.dir==='in'){ x1=x; y1=y; x2=cx; y2=cy; }
+      const [sx1,sy1,sx2,sy2] = shortenSeg(x1,y1,x2,y2, isAgentCat?15:2, isAgentCat?15:8);
+      body += `<line x1="${sx1}" y1="${sy1}" x2="${sx2}" y2="${sy2}" stroke="${color}" stroke-width="1.5" opacity="0.55" ${isAgentCat?`marker-end="url(#${markerId})" stroke-dasharray="${item.dir==='in'?'4 3':'0'}"`:''}/>`;
+      body += `<circle cx="${x}" cy="${y}" r="4.5" fill="${color}"/>`;
+      const anchor = textAnchorFor(x,cx);
+      const dx = anchor==='end'? -8 : anchor==='start'? 8 : 0;
+      body += `<text x="${x+dx}" y="${y+3}" fill="var(--ink)" font-family="var(--font-mono)" font-size="10" text-anchor="${anchor}">${item.label}${isAgentCat?(item.dir==='in'?' ↙':' ↗'):''}</text>`;
+    });
+  });
+  body += `<circle cx="${cx}" cy="${cy}" r="30" fill="var(--panel-2)" stroke="var(--accent)" stroke-width="1.5"/>`;
+  body += `<text x="${cx}" y="${cy-3}" fill="var(--ink)" font-family="var(--font-mono)" font-size="9" text-anchor="middle" font-weight="600">AGENT</text>`;
+  body += `<text x="${cx}" y="${cy+11}" fill="var(--accent)" font-family="var(--font-mono)" font-size="9" text-anchor="middle">${agent.stage}</text>`;
+  return `<svg viewBox="0 0 560 450" width="100%" style="max-height:420px;">${defs}${body}</svg>`;
+}
+
+// ---------- registry view ----------
+let regCatFilter = '';
+function agentHasCat(a, cat){
+  if(cat==='mcp') return (a.mcpServers||[]).length>0;
+  if(cat==='sys') return (a.enterpriseSystems||[]).length>0;
+  if(cat==='db') return (a.databases||[]).length>0;
+  if(cat==='kb') return (a.knowledgeBases||[]).length>0;
+  if(cat==='agents') return (a.calls||[]).length>0 || (CALLED_BY[a.id]||[]).length>0;
+  return true;
+}
+function renderRegCatChips(){
+  const cats = [['','All dependencies'], ...Object.entries(CAT_LABELS)];
+  document.getElementById('regCatChips').innerHTML = cats.map(([key,label])=>
+    `<button class="fchip ${regCatFilter===key?'active':''}" data-cat="${key}">${key?`<span class="sw" style="background:${CAT_COLORS[key]}"></span>`:''}${label}</button>`
+  ).join('');
+  document.querySelectorAll('#regCatChips .fchip').forEach(btn=>btn.addEventListener('click',()=>{
+    regCatFilter = btn.dataset.cat; renderRegCatChips(); renderRegistry();
+  }));
+}
+function refreshDeptOptions(){
+  const sel = document.getElementById('regDept');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All departments</option>' + depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+  if(depts.includes(current)) sel.value = current;
+}
+function depBadges(a){
+  const counts = [
+    ['mcp', (a.mcpServers||[]).length],
+    ['sys', (a.enterpriseSystems||[]).length],
+    ['db', (a.databases||[]).length],
+    ['kb', (a.knowledgeBases||[]).length],
+    ['agents', (a.calls||[]).length + (CALLED_BY[a.id]||[]).length],
+  ];
+  return counts.map(([key,c])=>`<span class="dbadge" title="${CAT_LABELS[key]}"><span class="sw" style="background:${CAT_COLORS[key]}"></span>${c}</span>`).join('');
+}
+function renderRegistry(){
+  const q = document.getElementById('regSearch').value.toLowerCase();
+  const stage = document.getElementById('regStage').value;
+  const dept = document.getElementById('regDept').value;
+  const typeVal = document.getElementById('regType').value;
+  const list = AGENTS.filter(a=>{
+    const matchesQ = !q || a.name.toLowerCase().includes(q) || a.description.toLowerCase().includes(q) || (a.tags||[]).some(t=>t.includes(q));
+    const matchesStage = !stage || a.stage===stage;
+    const matchesDept = !dept || a.dept===dept;
+    const matchesType = !typeVal || a.type===typeVal;
+    const matchesCat = !regCatFilter || agentHasCat(a, regCatFilter);
+    return matchesQ && matchesStage && matchesDept && matchesType && matchesCat;
+  });
+  document.getElementById('regGrid').innerHTML = list.map(a=>`
+    <div class="reg-card" data-id="${a.id}">
+      <div class="reg-card-top">${stageBadge(a.stage)}${typeBadge(a.type)}<span class="dept-chip">${a.dept}</span></div>
+      <h3>${a.name}</h3>
+      <p>${a.description}</p>
+      <div class="tagrow">${(a.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+      <div class="depbadges">${depBadges(a)}</div>
+      <div class="reg-meta"><span>${a.version}</span><span>${a.owner}</span></div>
+    </div>`).join('') || '<p style="color:var(--muted); font-size:13px;">No agents match those filters.</p>';
+  document.querySelectorAll('.reg-card').forEach(card=>card.addEventListener('click',()=>openModal(card.dataset.id)));
+}
+
+function openModal(id){
+  const a = AGENTS.find(x=>x.id===id);
+  if(!a) return;
+  document.getElementById('modalBody').innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">${stageBadge(a.stage)}${typeBadge(a.type)}<span class="dept-chip">${a.dept}</span></div>
+    <h2>${a.name}</h2>
+    <div class="modal-sub">${a.apiEndpoint} · ${a.version} · updated ${a.lastUpdated}</div>
+    <p class="desc">${a.description}</p>
+    <p class="outcome">${a.businessOutcome}</p>
+
+    <div class="graph-title">Dependency graph</div>
+    <div class="graph-wrap">${buildAgentGraph(a)}</div>
+    <div class="graph-legend">
+      ${Object.entries(CAT_LABELS).map(([k,l])=>`<span><span class="sw" style="background:${CAT_COLORS[k]}"></span>${l}</span>`).join('')}
+    </div>
+
+    <div class="def-grid">
+      <div class="def-block"><h5>Inputs</h5><ul>${(a.inputs||[]).map(i=>`<li>${i}</li>`).join('') || '<li>Not documented</li>'}</ul></div>
+      <div class="def-block"><h5>Outputs</h5><ul>${(a.outputs||[]).map(o=>`<li>${o}</li>`).join('') || '<li>Not documented</li>'}</ul></div>
+      <div class="def-block"><h5>Consumers</h5><ul>${(a.consumers||[]).map(c=>`<li>${c}</li>`).join('') || '<li>None yet</li>'}</ul></div>
+      <div class="def-block"><h5>SLA</h5><div class="plain">${a.sla}</div></div>
+      <div class="def-block"><h5>Owner</h5><div class="plain">${a.owner}<br>${a.contact}</div></div>
+      <div class="def-block"><h5>Time in stage</h5><div class="plain">${a.timeInStageWeeks} weeks</div></div>
+      <div class="def-block full"><h5>Governance</h5><div class="gov-badge-row">
+        <span class="gbadge" style="border-color:${REVIEW_COLOR[effectiveReview(a.id,'arb')]}88; color:${REVIEW_COLOR[effectiveReview(a.id,'arb')]}">ARB: ${effectiveReview(a.id,'arb')}</span>
+        <span class="gbadge" style="border-color:${REVIEW_COLOR[effectiveReview(a.id,'security')]}88; color:${REVIEW_COLOR[effectiveReview(a.id,'security')]}">Security: ${effectiveReview(a.id,'security')}</span>
+        <span class="gbadge" style="border-color:${REVIEW_COLOR[effectiveReview(a.id,'dp')]}88; color:${REVIEW_COLOR[effectiveReview(a.id,'dp')]}">Data Protection: ${effectiveReview(a.id,'dp')}</span>
+      </div></div>
+    </div>
+    ${a.atRisk ? `<div class="risk-item" style="border-top:1px solid var(--border); padding-top:14px;"><div class="risk-dot"></div><div><h4>Flagged</h4><p>${a.riskNote}</p></div></div>` : ''}
+  `;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+
+// ---------- add-agent form ----------
+function openAddAgentForm(prefill={}, discoveryId=null){
+  currentFormDiscoveryId = discoveryId;
+  document.getElementById('modalBody').innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <h2>Register a new AI application</h2>
+    <div class="modal-sub">Adds this to the shared registry${discoveryId?' and clears it from the discovery feed':''} — agent, copilot, model, or any other AI use case. Visible to everyone viewing this dashboard.</div>
+    <div class="form-grid">
+      <div class="form-field full"><label>Name *</label><input id="na-name" type="text" value="${prefill.name||''}"></div>
+      <div class="form-field"><label>AI application type</label><select id="na-type">${TYPES.map(t=>`<option value="${t}" ${prefill.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-field"><label>Department</label><input id="na-dept" type="text" list="deptList" value="${prefill.dept||''}"></div>
+      <datalist id="deptList">${depts.map(d=>`<option value="${d}">`).join('')}</datalist>
+      <div class="form-field"><label>Owning team</label><input id="na-owner" type="text" value="${prefill.owner||''}"></div>
+      <div class="form-field"><label>Stage</label><select id="na-stage">${STAGES.map(s=>`<option value="${s}" ${s==='Ideation'?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="form-field"><label>API endpoint (optional)</label><input id="na-api" type="text" placeholder="/agents/v1/…"></div>
+      <div class="form-field full"><label>Description *</label><textarea id="na-desc">${prefill.description||''}</textarea></div>
+      <div class="form-field full"><label>Business outcome</label><textarea id="na-outcome"></textarea></div>
+      <div class="form-field"><label>Enterprise systems (comma-separated)</label><input id="na-sys" type="text"></div>
+      <div class="form-field"><label>Databases (comma-separated)</label><input id="na-db" type="text"></div>
+      <div class="form-field"><label>MCP servers (comma-separated)</label><input id="na-mcp" type="text"></div>
+      <div class="form-field"><label>Knowledge bases (comma-separated)</label><input id="na-kb" type="text"></div>
+      <div class="form-field full"><label>Tags (comma-separated)</label><input id="na-tags" type="text" value="${prefill.tags||''}"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn ghost" id="naCancel">Cancel</button>
+      <button class="btn primary" id="naSave">Add to registry</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('naCancel').addEventListener('click', closeModal);
+  document.getElementById('naSave').addEventListener('click', submitNewAgent);
+}
+function submitNewAgent(){
+  const name = document.getElementById('na-name').value.trim();
+  const desc = document.getElementById('na-desc').value.trim();
+  if(!name || !desc){ showToast('Name and description are required.'); return; }
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') + '-' + Math.random().toString(36).slice(2,6);
+  const newAgent = {
+    id, name, dept: document.getElementById('na-dept').value.trim() || 'Unassigned',
+    owner: document.getElementById('na-owner').value.trim() || 'Unassigned',
+    contact:'#agent-registry', stage: document.getElementById('na-stage').value,
+    type: document.getElementById('na-type').value,
+    version:'v0.1', lastUpdated:'2026-08-13', timeInStageWeeks:0, atRisk:false,
+    description: desc, businessOutcome: document.getElementById('na-outcome').value.trim() || 'Not yet quantified.',
+    valueAmount:0, valueType:'Not yet quantified', hoursSavedMonthly:0,
+    enterpriseSystems: splitList(document.getElementById('na-sys').value),
+    databases: splitList(document.getElementById('na-db').value),
+    knowledgeBases: splitList(document.getElementById('na-kb').value),
+    mcpServers: splitList(document.getElementById('na-mcp').value),
+    calls:[], consumers:[], inputs:[], outputs:[],
+    apiEndpoint: document.getElementById('na-api').value.trim() || 'Not yet defined',
+    sla:'Not yet defined',
+    tags: splitList(document.getElementById('na-tags').value),
+    reviews:{arb:'Not Submitted', security:'Not Submitted', dp:'Not Submitted'}
+  };
+  customAgents.push(newAgent);
+  persist('agents:custom', customAgents);
+  if(currentFormDiscoveryId){
+    registeredIds.push(currentFormDiscoveryId);
+    persist('discovery:registered', registeredIds);
+    currentFormDiscoveryId = null;
+  }
+  recompute();
+  renderAll();
+  closeModal();
+  showToast('Added to the registry.');
+  switchView('registry');
+  setTimeout(()=>openModal(id), 60);
+}
+
+// ---------- tabs & wiring ----------
+function switchView(view){
+  document.querySelectorAll('.persona-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+}
+function renderAll(){
+  renderTicker();
+  renderExecKpis();
+  renderRail();
+  renderTypeBars();
+  renderDeptBars();
+  renderRiskList();
+  renderTopTable();
+  renderDeptChips();
+  renderBusiness();
+  renderPlatform();
+  renderGovernance();
+  refreshDeptOptions();
+  renderRegCatChips();
+  renderRegistry();
+}
+function wireStaticControls(){
+  document.querySelectorAll('.persona-btn').forEach(btn=>btn.addEventListener('click', ()=>switchView(btn.dataset.view)));
+  document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
+  STAGES.forEach(s=>{const o=document.createElement('option'); o.value=s; o.textContent=s; document.getElementById('regStage').appendChild(o);});
+  TYPES.forEach(t=>{const o=document.createElement('option'); o.value=t; o.textContent=t; document.getElementById('regType').appendChild(o);});
+  document.getElementById('regSearch').addEventListener('input', renderRegistry);
+  document.getElementById('regStage').addEventListener('change', renderRegistry);
+  document.getElementById('regDept').addEventListener('change', renderRegistry);
+  document.getElementById('regType').addEventListener('change', renderRegistry);
+  document.getElementById('btnAddAgentRegistry').addEventListener('click', ()=>openAddAgentForm());
+  document.getElementById('btnAddAgentGov').addEventListener('click', ()=>openAddAgentForm());
+}
+
+// ---------- init ----------
+async function init(){
+  wireStaticControls();
+  await loadPersistedState();
+  recompute();
+  renderAll();
+}
+init();
+</script>
+
+</body>
+</html>

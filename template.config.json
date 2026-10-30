@@ -1,0 +1,16 @@
+{
+  "$comment": "Declares the placeholder tokens the bootstrapper replaces. Edit defaults here or override on the CLI. See bootstrap.py.",
+  "template": "accelerator-bootstrapper-template",
+  "based_on": "digital-onboarding",
+  "placeholders": {
+    "__APP_NAME__":      { "description": "kebab-case app + Azure resource name", "example": "payment-insights", "required": true },
+    "__APP_SLUG__":      { "description": "snake_case name for python/db identifiers", "derived": "app_name.replace('-', '_')" },
+    "__APP_TITLE__":     { "description": "Human-readable title", "derived": "Title Case of app_name" },
+    "__APP_DESC__":      { "description": "One-line app description", "default": "<title> — an AI agent application on the ZenLabs Agent Foundry." },
+    "__BACKEND_PORT__":  { "description": "FastAPI/uvicorn port", "default": "8000" },
+    "__FRONTEND_PORT__": { "description": "Vite dev-server port", "default": "3000" },
+    "__NAMESPACE__":     { "description": "Temporal namespace", "derived": "app_name" },
+    "__TASK_QUEUE__":    { "description": "Temporal task queue", "derived": "<app_name>-agents" },
+    "__DB_NAME__":       { "description": "Postgres database name", "derived": "app_slug" }
+  }
+}

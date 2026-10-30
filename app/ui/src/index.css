@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── ZenLabs Design System ────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    --sidebar-w: 240px;
+    --header-h: 60px;
+    --footer-h: 44px;
+  }
+
+  * { @apply antialiased; }
+
+  html { font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif; }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
+  .dark ::-webkit-scrollbar-thumb { @apply bg-gray-600; }
+  .dark ::-webkit-scrollbar-thumb:hover { @apply bg-gray-500; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-300; }
+}
+
+@layer components {
+  /* ── Cards ───────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-card;
+  }
+  .card-hover {
+    @apply card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer;
+  }
+  .card-glass {
+    @apply rounded-2xl border border-white/20 bg-white/70 backdrop-blur-sm shadow-card;
+  }
+
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
+           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-zen text-white shadow-sm hover:shadow-glow-zen hover:-translate-y-px
+           active:translate-y-0 active:shadow-sm;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-gray-700 border border-gray-200 hover:bg-gray-50
+           hover:border-gray-300 hover:shadow-sm shadow-sm;
+  }
+  .btn-ghost {
+    @apply btn text-gray-600 hover:bg-gray-100 hover:text-gray-900;
+  }
+  .btn-danger {
+    @apply btn bg-rose-600 text-white hover:bg-rose-700 shadow-sm hover:shadow-md;
+  }
+  .btn-success {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow-glow-emerald;
+  }
+  .btn-sm  { @apply px-3 py-1.5 text-xs rounded-lg; }
+  .btn-lg  { @apply px-6 py-3 text-base rounded-2xl; }
+
+  /* ── Inputs ──────────────────────────────────────────── */
+  .input {
+    @apply w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl
+           outline-none transition-all placeholder-gray-400
+           focus:border-zen-400 focus:ring-2 focus:ring-zen-500/15 focus:shadow-sm;
+  }
+
+  /* ── Risk badges ─────────────────────────────────────── */
+  .risk-low      { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .risk-medium   { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50  text-amber-700  ring-1 ring-amber-200; }
+  .risk-high     { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 ring-1 ring-orange-200; }
+  .risk-very_high{ @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50   text-rose-700   ring-1 ring-rose-200; }
+  .risk-critical { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100   text-red-800    ring-1 ring-red-300; }
+
+  /* ── Status badges ───────────────────────────────────── */
+  .status-pending  { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100   text-gray-600; }
+  .status-active   { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50    text-blue-700    ring-1 ring-blue-200; }
+  .status-complete { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
+  .status-review   { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50   text-amber-700   ring-1 ring-amber-200; }
+  .status-failed   { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50    text-rose-700    ring-1 ring-rose-200; }
+  .status-approved { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300; }
+  .status-rejected { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50     text-red-700     ring-1 ring-red-200; }
+
+  /* ── Journey pills ───────────────────────────────────── */
+  .journey-retail    { @apply px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50    text-blue-700    ring-1 ring-blue-200; }
+  .journey-corporate { @apply px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50  text-purple-700  ring-1 ring-purple-200; }
+  .journey-merchant  { @apply px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-50  text-orange-700  ring-1 ring-orange-200; }
+  .journey-vendor    { @apply px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50    text-teal-700    ring-1 ring-teal-200; }
+
+  /* ── Page section ────────────────────────────────────── */
+  .page-header  { @apply flex items-center justify-between mb-6; }
+  .page-title   { @apply text-xl font-bold text-gray-900; }
+  .section-title{ @apply text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3; }
+
+  /* ── Divider ─────────────────────────────────────────── */
+  .divider { @apply border-t border-gray-100 my-4; }
+
+  /* ── Typing indicator ────────────────────────────────── */
+  .typing-dot { @apply w-2 h-2 bg-zen-400 rounded-full animate-pulse-dot; }
+
+  /* ── Notification badge ──────────────────────────────── */
+  .notif-badge {
+    @apply absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center
+           text-[10px] font-bold text-white bg-rose-500 rounded-full px-1
+           ring-2 ring-white shadow-sm animate-bounce-sm;
+  }
+
+  /* ── Live pulse dot ──────────────────────────────────── */
+  .live-dot {
+    @apply relative w-2 h-2;
+  }
+  .live-dot::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-emerald-400 animate-pulse-ring;
+  }
+  .live-dot::after {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-emerald-500;
+  }
+
+  /* ── Agent status indicator ──────────────────────────── */
+  .agent-active-dot {
+    @apply w-2 h-2 rounded-full bg-zen-500 shadow-glow-zen animate-pulse;
+  }
+  .agent-done-dot {
+    @apply w-2 h-2 rounded-full bg-emerald-400;
+  }
+  .agent-idle-dot {
+    @apply w-2 h-2 rounded-full bg-gray-200;
+  }
+
+  /* ── Gradient text ───────────────────────────────────── */
+  .gradient-text {
+    @apply bg-gradient-zen bg-clip-text text-transparent;
+  }
+
+  /* ── Shimmer skeleton ────────────────────────────────── */
+  .skeleton {
+    @apply rounded-lg bg-gray-100 overflow-hidden relative;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 bg-shimmer bg-[length:400px_100%] animate-shimmer;
+  }
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+.sidebar-link {
+  @apply relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium
+         text-gray-500 hover:bg-zen-50 hover:text-zen-700 transition-all duration-150;
+}
+.sidebar-link.active {
+  @apply bg-gradient-zen-soft text-zen-700 font-semibold shadow-sm;
+}
+.sidebar-link.active::before {
+  content: '';
+  @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-zen rounded-r-full;
+}
+.sidebar-link svg {
+  @apply flex-shrink-0 opacity-60 transition-opacity;
+}
+.sidebar-link.active svg {
+  @apply opacity-100 text-zen-600;
+}
+.sidebar-link:hover svg {
+  @apply opacity-90;
+}

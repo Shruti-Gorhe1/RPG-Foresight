@@ -1,0 +1,100 @@
+version: "3.9"
+
+services:
+  # ── Application API ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8010:8010"
+    env_file: .env
+    environment:
+      - TEMPORAL_HOST=temporal:7233
+      - APP_ENV=development
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/rpg_foresight
+      - PHOENIX_HOST=phoenix
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      phoenix:
+        condition: service_started
+    volumes:
+      - .:/app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8010 --reload
+
+  # ── Temporal worker (same image, command override) ───────────────────────────
+  worker:
+    build: { context: ., dockerfile: Dockerfile }
+    env_file: .env
+    environment:
+      - TEMPORAL_HOST=temporal:7233
+      - APP_ENV=development
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/rpg_foresight
+      - PHOENIX_HOST=phoenix
+    depends_on:
+      temporal: { condition: service_healthy }
+      phoenix: { condition: service_started }
+    restart: on-failure
+    command: python -m workers.worker
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: rpg_foresight
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rpg_foresight"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=password
+      - POSTGRES_SEEDS=postgres
+      - DEFAULT_NAMESPACE=__NAMESPACE__
+      - DYNAMIC_CONFIG_FILE_PATH=/etc/temporal/dynamic-config.yaml
+    volumes:
+      - ./config/temporal/dynamic-config.yaml:/etc/temporal/dynamic-config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "temporal operator namespace describe __NAMESPACE__ --address $(hostname -i | awk '{print $1}'):7233 >/dev/null 2>&1 && echo ok || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    ports:
+      - "8080:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_UI_CORS_ORIGINS=http://localhost:8080
+      - TEMPORAL_UI_DEFAULT_NAMESPACE=__NAMESPACE__
+    depends_on: [temporal]
+
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    ports:
+      - "6006:6006"
+
+volumes:
+  pgdata:

@@ -1,0 +1,55 @@
+# OPTIONAL — dedicated Temporal server + UI for __APP_NAME__.
+#
+# Most apps should reuse the SHARED Temporal in the environment (point
+# TEMPORAL_HOST at temporal-be.internal.<env>:443 and use your own namespace).
+# Only run this pipeline if __APP_NAME__ needs an isolated Temporal cluster.
+#
+# Trigger is manual (no automatic branch trigger) to avoid accidental spin-up.
+trigger: none
+
+variables:
+  azureSubscription: 'Zenlabs-agent-foundry-connection'
+  resourceGroup: 'Zenlabs-Agent-Foundry'
+  environmentName: 'zaf-aca-pvt-env'
+  namespace: '__NAMESPACE__'
+  # Point these at your Postgres (Temporal auto-setup creates its own schema).
+  pgHost: '<your-pg>.postgres.database.azure.com'
+  pgUser: '<admin-user>'
+  pgPwd: '<admin-password>'
+  pgTemporalDb: 'temporal'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Temporal
+    displayName: Provision Temporal (optional)
+    jobs:
+      - job: Temporal
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az containerapp create -n __APP_NAME__-temporal-be -g $(resourceGroup) \
+                  --environment $(environmentName) --image temporalio/auto-setup:1.24.2 \
+                  --target-port 7233 --transport tcp --ingress internal \
+                  --min-replicas 1 --max-replicas 1 --cpu 1.0 --memory 2Gi \
+                  --env-vars DB=postgres12 DB_PORT=5432 \
+                    "POSTGRES_SEEDS=$(pgHost)" "POSTGRES_USER=$(pgUser)" \
+                    "POSTGRES_PWD=$(pgPwd)" "POSTGRES_DB=$(pgTemporalDb)" \
+                    "DEFAULT_NAMESPACE=$(namespace)" \
+                  --only-show-errors || \
+                az containerapp update -n __APP_NAME__-temporal-be -g $(resourceGroup) \
+                  --image temporalio/auto-setup:1.24.2
+
+                az containerapp create -n __APP_NAME__-temporal-ui -g $(resourceGroup) \
+                  --environment $(environmentName) --image temporalio/ui:2.26.2 \
+                  --target-port 8080 --ingress external \
+                  --min-replicas 0 --max-replicas 1 --cpu 0.25 --memory 0.5Gi \
+                  --env-vars "TEMPORAL_ADDRESS=__APP_NAME__-temporal-be.internal.<env>:7233" \
+                    "TEMPORAL_UI_DEFAULT_NAMESPACE=$(namespace)" \
+                  --only-show-errors || true

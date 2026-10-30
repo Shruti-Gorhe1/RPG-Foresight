@@ -1,0 +1,59 @@
+# Frontend CI/CD — build nginx image, push to ACR, deploy to Azure Container Apps.
+trigger:
+  branches: { include: [main] }
+  paths:
+    include:
+      - app/ui/**
+      - azure-pipelines-fe.yml
+
+variables:
+  azureSubscription: 'Zenlabs-agent-foundry-connection'
+  acrName: 'zafacr'
+  acrLoginServer: 'zafacr-gqfyc3h8eya2djey.azurecr.io'
+  resourceGroup: 'Zenlabs-Agent-Foundry'
+  environmentName: 'zaf-aca-pvt-env'
+  frontendApp: '__APP_NAME__-fe'
+  backendApp: '__APP_NAME__-be'
+  frontendRepo: '__APP_NAME__-fe'
+  tag: 'latest'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: BuildDeploy
+    displayName: Build & Deploy Frontend
+    jobs:
+      - job: BuildDeploy
+        steps:
+          - task: AzureCLI@2
+            displayName: Build image (ACR) and deploy frontend
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                IMAGE="$(acrLoginServer)/$(frontendRepo):$(tag)"
+
+                echo "== Build & push =="
+                az acr build --registry $(acrName) --image "$(frontendRepo):$(tag)" \
+                  --file app/ui/Dockerfile app/ui
+
+                # Backend internal FQDN for the nginx /api proxy (http, allow-insecure).
+                BE_FQDN="$(az containerapp show -n $(backendApp) -g $(resourceGroup) \
+                  --query 'properties.configuration.ingress.fqdn' -o tsv 2>/dev/null || true)"
+                BACKEND_URL="http://${BE_FQDN}"
+
+                echo "== Deploy frontend (BACKEND_URL=$BACKEND_URL) =="
+                if az containerapp show -n $(frontendApp) -g $(resourceGroup) >/dev/null 2>&1; then
+                  az containerapp update -n $(frontendApp) -g $(resourceGroup) --image "$IMAGE" \
+                    --set-env-vars "BACKEND_URL=$BACKEND_URL"
+                else
+                  az containerapp create -n $(frontendApp) -g $(resourceGroup) \
+                    --environment $(environmentName) --image "$IMAGE" \
+                    --target-port 80 --ingress external \
+                    --min-replicas 0 --max-replicas 3 --cpu 0.5 --memory 1Gi \
+                    --registry-server $(acrLoginServer) \
+                    --env-vars "BACKEND_URL=$BACKEND_URL"
+                fi

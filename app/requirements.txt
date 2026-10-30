@@ -1,0 +1,64 @@
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+python-multipart
+websockets
+openpyxl
+pypdf
+python-docx
+
+# ── LangGraph / LangChain ─────────────────────────────────────────────────────
+langgraph
+langchain
+langchain-openai
+langchain-community
+
+# ── Temporal workflow ─────────────────────────────────────────────────────────
+temporalio
+
+# ── AI / ML ───────────────────────────────────────────────────────────────────
+openai
+tiktoken
+
+# ── Vector DB (optional — remove if unused) ───────────────────────────────────
+qdrant-client
+
+# ── Database / Cache ──────────────────────────────────────────────────────────
+sqlalchemy
+alembic
+asyncpg
+aiosqlite
+greenlet
+
+# ── Auth / Security ───────────────────────────────────────────────────────────
+python-jose[cryptography]
+msal
+azure-keyvault-secrets
+azure-identity
+cryptography
+
+# ── HTTP / Integrations ───────────────────────────────────────────────────────
+httpx
+aiohttp
+truststore
+
+# ── Observability ─────────────────────────────────────────────────────────────
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+opentelemetry-exporter-otlp-proto-http
+opentelemetry-instrumentation-fastapi
+openinference-instrumentation-langchain
+openinference-instrumentation-openai
+arize-phoenix
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+pydantic
+pydantic-settings
+python-dotenv
+structlog
+tenacity
+pyyaml
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest
+pytest-asyncio

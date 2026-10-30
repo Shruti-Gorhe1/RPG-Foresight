@@ -1,0 +1,15 @@
+# Temporal Server Dynamic Configuration
+# Enables the Workflow Update feature (required for @workflow.update handlers).
+
+frontend.enableUpdateWorkflowExecution:
+  - value: true
+    constraints: {}
+
+frontend.enableUpdateWorkflowExecutionAsyncAccepted:
+  - value: true
+    constraints: {}
+
+# Allow larger payloads for LangGraph state blobs.
+limit.maxActivityScheduleToStartTimeout:
+  - value: 600
+    constraints: {}

@@ -1,0 +1,68 @@
+# Backend CI/CD — build image, push to ACR, deploy to Azure Container Apps.
+trigger:
+  branches: { include: [main] }
+  paths:
+    include:
+      - app/**
+      - azure-pipelines-be.yml
+    exclude:
+      - app/ui/**
+
+variables:
+  azureSubscription: 'Zenlabs-agent-foundry-connection'
+  acrName: 'zafacr'
+  acrLoginServer: 'zafacr-gqfyc3h8eya2djey.azurecr.io'
+  resourceGroup: 'Zenlabs-Agent-Foundry'
+  environmentName: 'zaf-aca-pvt-env'
+  backendApp: '__APP_NAME__-be'
+  workerApp: '__APP_NAME__-worker'
+  backendRepo: '__APP_NAME__-be'
+  backendPort: '__BACKEND_PORT__'
+  tag: 'latest'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: BuildDeploy
+    displayName: Build & Deploy Backend
+    jobs:
+      - job: BuildDeploy
+        steps:
+          - task: AzureCLI@2
+            displayName: Build image (ACR) and deploy backend + worker
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                IMAGE="$(acrLoginServer)/$(backendRepo):$(tag)"
+
+                echo "== Build & push =="
+                az acr build --registry $(acrName) --image "$(backendRepo):$(tag)" \
+                  --file app/Dockerfile app
+
+                echo "== Deploy backend =="
+                if az containerapp show -n $(backendApp) -g $(resourceGroup) >/dev/null 2>&1; then
+                  az containerapp update -n $(backendApp) -g $(resourceGroup) --image "$IMAGE"
+                else
+                  az containerapp create -n $(backendApp) -g $(resourceGroup) \
+                    --environment $(environmentName) --image "$IMAGE" \
+                    --target-port $(backendPort) --ingress internal --allow-insecure \
+                    --min-replicas 0 --max-replicas 3 --cpu 1 --memory 2Gi \
+                    --registry-server $(acrLoginServer) \
+                    --env-vars APP_ENV=production LOG_LEVEL=INFO
+                fi
+
+                echo "== Deploy worker (same image) =="
+                if az containerapp show -n $(workerApp) -g $(resourceGroup) >/dev/null 2>&1; then
+                  az containerapp update -n $(workerApp) -g $(resourceGroup) --image "$IMAGE"
+                else
+                  az containerapp create -n $(workerApp) -g $(resourceGroup) \
+                    --environment $(environmentName) --image "$IMAGE" --ingress none \
+                    --min-replicas 1 --max-replicas 3 --cpu 0.5 --memory 1Gi \
+                    --registry-server $(acrLoginServer) \
+                    --command python -- -m workers.worker \
+                    --env-vars APP_ENV=production LOG_LEVEL=INFO
+                fi

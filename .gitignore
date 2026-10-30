@@ -1,0 +1,50 @@
+<<<<<<< HEAD
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── Virtualenvs (never commit these) ─────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+app/.env
+app/ui/.env
+app/ui/.env.local
+
+# ── Node / Vite (never commit these) ─────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ── Editors / OS ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.log
+*.csv
+.venv
+.csv
+
+
+freetender-tenders-2026-09.csv
+freetender-tenders-2026-10.csv
+=======
+# Added by px setup — local Phoenix credentials
+.env.phoenix
+*.csv
+>>>>>>> github/main
